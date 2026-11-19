@@ -1,0 +1,42 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <limits.h>
+static int imax(int a,int b){return a>b?a:b;}static int imin(int a,int b){return a<b?a:b;}
+static int compareInt(const void*a,const void*b){int x=*(const int*)a,y=*(const int*)b;return (x>y)-(x<y);}
+static int compareRow(const void*a,const void*b){const int*x=*(const int*const*)a,*y=*(const int*const*)b;return (x[0]>y[0])-(x[0]<y[0]);}
+int maxSubArray(int*a,int n){int end=a[0],best=end;for(int i=1;i<n;i++){end=imax(a[i],end+a[i]);best=imax(best,end);}return best;}
+int search(int*a,int n,int target){int l=0,r=n-1;while(l<=r){int m=l+(r-l)/2;if(a[m]==target)return m;if(a[l]<=a[m]){if(a[l]<=target&&target<a[m])r=m-1;else l=m+1;}else{if(a[m]<target&&target<=a[r])l=m+1;else r=m-1;}}return -1;}
+int missingNumber(int*a,int n){int x=n;for(int i=0;i<n;i++)x^=i^a[i];return x;}
+int getSum(int a,int b){uint32_t x=(uint32_t)a,y=(uint32_t)b;while(y){uint32_t c=(x&y)<<1;x^=y;y=c;}return x<=INT32_MAX?(int)x:(int)((int64_t)x-4294967296LL);}
+uint32_t reverseBits(uint32_t n){uint32_t out=0;for(int i=0;i<32;i++){out=(out<<1)|(n&1);n>>=1;}return out;}
+int longestCommonSubsequence(char*a,char*b){int m=strlen(a),n=strlen(b);int*d=calloc((m+1)*(n+1),sizeof(int));for(int i=1;i<=m;i++)for(int j=1;j<=n;j++)d[i*(n+1)+j]=a[i-1]==b[j-1]?d[(i-1)*(n+1)+j-1]+1:imax(d[(i-1)*(n+1)+j],d[i*(n+1)+j-1]);int out=d[m*(n+1)+n];free(d);return out;}
+int combinationSum4(int*a,int n,int target){int*d=calloc(target+1,sizeof(int));d[0]=1;for(int i=1;i<=target;i++)for(int j=0;j<n;j++)if(a[j]<=i)d[i]+=d[i-a[j]];int out=d[target];free(d);return out;}
+static int linearRob(int*a,int begin,int end){int x=0,y=0;for(int i=begin;i<end;i++){int next=imax(y,x+a[i]);x=y;y=next;}return y;}
+int rob(int*a,int n){return n==1?a[0]:imax(linearRob(a,0,n-1),linearRob(a,1,n));}
+int numDecodings(char*s){int n=strlen(s);int*d=calloc(n+1,sizeof(int));d[0]=1;for(int i=1;i<=n;i++){if(s[i-1]!='0')d[i]+=d[i-1];if(i>1){int v=(s[i-2]-'0')*10+s[i-1]-'0';if(v>=10&&v<=26)d[i]+=d[i-2];}}int out=d[n];free(d);return out;}
+int uniquePaths(int m,int n){int*d=malloc(n*sizeof(int));for(int i=0;i<n;i++)d[i]=1;for(int y=1;y<m;y++)for(int x=1;x<n;x++)d[x]+=d[x-1];int out=d[n-1];free(d);return out;}
+int longestConsecutive(int*a,int n){qsort(a,n,sizeof(int),compareInt);int best=0,run=0;for(int i=0;i<n;i++){if(i&&a[i]==a[i-1])continue;run=i&&(int64_t)a[i]==(int64_t)a[i-1]+1?run+1:1;best=imax(best,run);}return best;}
+static int root(int*p,int x){while(p[x]!=x){p[x]=p[p[x]];x=p[x];}return x;}
+int countComponents(int n,int**e,int size,int*cols){int*p=malloc(n*sizeof(int));for(int i=0;i<n;i++)p[i]=i;int count=n;for(int i=0;i<size;i++){int a=root(p,e[i][0]),b=root(p,e[i][1]);if(a!=b){p[a]=b;count--;}}free(p);return count;}
+bool validTree(int n,int**e,int size,int*cols){return size==n-1&&countComponents(n,e,size,cols)==1;}
+bool canAttendMeetings(int**a,int n,int*cols){qsort(a,n,sizeof(int*),compareRow);for(int i=1;i<n;i++)if(a[i][0]<a[i-1][1])return false;return true;}
+int minMeetingRooms(int**a,int n,int*cols){int best=0;for(int i=0;i<n;i++){int active=0;for(int j=0;j<n;j++)if(a[j][0]<=a[i][0]&&a[i][0]<a[j][1])active++;best=imax(best,active);}return best;}
+bool isPalindrome(char*s){int l=0,r=(int)strlen(s)-1;while(l<r){while(l<r&&!isalnum((unsigned char)s[l]))l++;while(l<r&&!isalnum((unsigned char)s[r]))r--;if(tolower((unsigned char)s[l++])!=tolower((unsigned char)s[r--]))return false;}return true;}
+char* longestPalindrome(char*s){int n=strlen(s),start=0,len=0;for(int c=0;c<2*n-1;c++){int l=c/2,r=(c+1)/2;while(l>=0&&r<n&&s[l]==s[r]){if(r-l+1>len){start=l;len=r-l+1;}l--;r++;}}char*out=calloc(len+1,1);memcpy(out,s+start,len);return out;}
+int countSubstrings(char*s){int n=strlen(s),count=0;for(int c=0;c<2*n-1;c++){int l=c/2,r=(c+1)/2;while(l>=0&&r<n&&s[l]==s[r]){count++;l--;r++;}}return count;}
+int characterReplacement(char*s,int k){int count[26]={},l=0,best=0,n=strlen(s);for(int r=0;r<n;r++){count[s[r]-'A']++;while(1){int max=0;for(int i=0;i<26;i++)max=imax(max,count[i]);if(r-l+1-max<=k)break;count[s[l++]-'A']--;}best=imax(best,r-l+1);}return best;}
+bool wordBreak(char*s,char**words,int wordCount){int n=strlen(s);bool*d=calloc(n+1,sizeof(bool));d[0]=true;for(int i=1;i<=n;i++)for(int j=0;j<wordCount;j++){int len=strlen(words[j]);if(i>=len&&d[i-len]&&strncmp(s+i-len,words[j],len)==0)d[i]=true;}bool out=d[n];free(d);return out;}
+int* productExceptSelf(int*a,int n,int*returnSize){int*out=malloc(n*sizeof(int)),p=1;for(int i=0;i<n;i++){out[i]=p;p*=a[i];}p=1;for(int i=n-1;i>=0;i--){out[i]*=p;p*=a[i];}*returnSize=n;return out;}
+int* countBits(int n,int*returnSize){int*d=calloc(n+1,sizeof(int));for(int i=1;i<=n;i++)d[i]=d[i>>1]+(i&1);*returnSize=n+1;return d;}
+int* spiralOrder(int**a,int rows,int*cols,int*returnSize){int*out=malloc(rows*cols[0]*sizeof(int)),size=0,t=0,b=rows-1,l=0,r=cols[0]-1;while(t<=b&&l<=r){for(int x=l;x<=r;x++)out[size++]=a[t][x];t++;for(int y=t;y<=b;y++)out[size++]=a[y][r];r--;if(t<=b){for(int x=r;x>=l;x--)out[size++]=a[b][x];b--;}if(l<=r){for(int y=b;y>=t;y--)out[size++]=a[y][l];l++;}}*returnSize=size;return out;}
+int* topKFrequent(int*a,int n,int k,int*returnSize){int*values=malloc(n*sizeof(int)),*counts=calloc(n,sizeof(int));int size=0;for(int i=0;i<n;i++){int j=0;while(j<size&&values[j]!=a[i])j++;if(j==size)values[size++]=a[i];counts[j]++;}int*out=malloc(k*sizeof(int));for(int i=0;i<k;i++){int best=0;for(int j=1;j<size;j++)if(counts[j]>counts[best])best=j;out[i]=values[best];counts[best]=-1;}free(values);free(counts);*returnSize=k;return out;}
+int** merge(int**a,int n,int*cols,int*returnSize,int**returnColumnSizes){qsort(a,n,sizeof(int*),compareRow);int**out=malloc((n?n:1)*sizeof(int*));int*widths=malloc((n?n:1)*sizeof(int)),size=0;for(int i=0;i<n;i++){if(size&&a[i][0]<=out[size-1][1])out[size-1][1]=imax(out[size-1][1],a[i][1]);else{out[size]=malloc(2*sizeof(int));out[size][0]=a[i][0];out[size][1]=a[i][1];widths[size++]=2;}}*returnSize=size;*returnColumnSizes=widths;return out;}
+int** insert(int**a,int n,int*cols,int*b,int bSize,int*returnSize,int**returnColumnSizes){int**all=malloc((n+1)*sizeof(int*));for(int i=0;i<n;i++)all[i]=a[i];all[n]=b;int**out=merge(all,n+1,cols,returnSize,returnColumnSizes);free(all);return out;}
+void setZeroes(int**a,int rows,int*cols){bool*r=calloc(rows,sizeof(bool)),*c=calloc(cols[0],sizeof(bool));for(int y=0;y<rows;y++)for(int x=0;x<cols[0];x++)if(a[y][x]==0){r[y]=true;c[x]=true;}for(int y=0;y<rows;y++)for(int x=0;x<cols[0];x++)if(r[y]||c[x])a[y][x]=0;free(r);free(c);}
+void rotate(int**a,int n,int*cols){for(int y=0;y<n;y++)for(int x=y+1;x<n;x++){int v=a[y][x];a[y][x]=a[x][y];a[x][y]=v;}for(int y=0;y<n;y++)for(int l=0,r=n-1;l<r;l++,r--){int v=a[y][l];a[y][l]=a[y][r];a[y][r]=v;}}
+int** threeSum(int*a,int n,int*returnSize,int**returnColumnSizes){qsort(a,n,sizeof(int),compareInt);int cap=8,size=0;int**out=malloc(cap*sizeof(int*));int*cols=malloc(cap*sizeof(int));for(int i=0;i+2<n;i++){if(i&&a[i]==a[i-1])continue;int l=i+1,r=n-1;while(l<r){int sum=a[i]+a[l]+a[r];if(sum<0)l++;else if(sum>0)r--;else{if(size==cap){cap*=2;out=realloc(out,cap*sizeof(int*));cols=realloc(cols,cap*sizeof(int));}out[size]=malloc(3*sizeof(int));out[size][0]=a[i];out[size][1]=a[l];out[size][2]=a[r];cols[size++]=3;int lv=a[l],rv=a[r];while(l<r&&a[l]==lv)l++;while(l<r&&a[r]==rv)r--;}}}*returnSize=size;*returnColumnSizes=cols;return out;}
+static bool* flood(int**a,int rows,int cols,bool atl){bool*seen=calloc(rows*cols,sizeof(bool));int*q=malloc(rows*cols*sizeof(int)),head=0,tail=0;for(int y=0;y<rows;y++)for(int x=0;x<cols;x++)if(atl?(y==rows-1||x==cols-1):(y==0||x==0)){seen[y*cols+x]=true;q[tail++]=y*cols+x;}int dy[4]={-1,1,0,0},dx[4]={0,0,-1,1};while(head<tail){int id=q[head++],y=id/cols,x=id%cols;for(int d=0;d<4;d++){int ny=y+dy[d],nx=x+dx[d];if(ny>=0&&nx>=0&&ny<rows&&nx<cols&&!seen[ny*cols+nx]&&a[ny][nx]>=a[y][x]){seen[ny*cols+nx]=true;q[tail++]=ny*cols+nx;}}}free(q);return seen;}
+int** pacificAtlantic(int**a,int rows,int*cols,int*returnSize,int**returnColumnSizes){int width=cols[0],size=0;bool*p=flood(a,rows,width,false),*t=flood(a,rows,width,true);int**out=malloc(rows*width*sizeof(int*)),*widths=malloc(rows*width*sizeof(int));for(int y=0;y<rows;y++)for(int x=0;x<width;x++)if(p[y*width+x]&&t[y*width+x]){out[size]=malloc(2*sizeof(int));out[size][0]=y;out[size][1]=x;widths[size++]=2;}free(p);free(t);*returnSize=size;*returnColumnSizes=widths;return out;}

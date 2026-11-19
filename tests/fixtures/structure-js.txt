@@ -1,0 +1,25 @@
+function cloneGraph(node){const copies=new Map();function copy(n){if(!n)return null;if(copies.has(n))return copies.get(n);const c=new Node(n.val);copies.set(n,c);c.neighbors=n.neighbors.map(copy);return c;}return copy(node);}
+function alienOrder(words){const adj=new Map([...new Set(words.join(''))].map(c=>[c,new Set()])),degree=new Map([...adj.keys()].map(c=>[c,0]));for(let i=1;i<words.length;i++){const a=words[i-1],b=words[i];let j=0;while(j<Math.min(a.length,b.length)&&a[j]===b[j])j++;if(j===b.length&&a.length>b.length)return '';if(j<Math.min(a.length,b.length)&&!adj.get(a[j]).has(b[j])){adj.get(a[j]).add(b[j]);degree.set(b[j],degree.get(b[j])+1);}}const q=[...degree].filter(([,d])=>!d).map(([c])=>c);let out='';for(let i=0;i<q.length;i++){const c=q[i];out+=c;for(const v of adj.get(c)){degree.set(v,degree.get(v)-1);if(!degree.get(v))q.push(v);}}return out.length===adj.size?out:'';}
+function reverseList(head){let prev=null;while(head){const next=head.next;head.next=prev;prev=head;head=next;}return prev;}
+function hasCycle(head){let slow=head,fast=head;while(fast&&fast.next){slow=slow.next;fast=fast.next.next;if(slow===fast)return true;}return false;}
+function mergeTwoLists(a,b){const dummy=new ListNode();let t=dummy;while(a&&b){if(a.val<=b.val){t.next=a;a=a.next;}else{t.next=b;b=b.next;}t=t.next;}t.next=a||b;return dummy.next;}
+function mergeKLists(lists){return lists.reduce(mergeTwoLists,null);}
+function removeNthFromEnd(head,n){const dummy=new ListNode(0,head);let slow=dummy,fast=dummy;for(let i=0;i<=n;i++)fast=fast.next;while(fast){slow=slow.next;fast=fast.next;}slow.next=slow.next.next;return dummy.next;}
+function reorderList(head){const nodes=[];for(let p=head;p;p=p.next)nodes.push(p);const out=[];let l=0,r=nodes.length-1;while(l<=r){out.push(nodes[l++]);if(l<=r)out.push(nodes[r--]);}out.forEach((n,i)=>n.next=out[i+1]??null);}
+function groupAnagrams(strs){const m=new Map();for(const s of strs){const k=[...s].sort().join('');if(!m.has(k))m.set(k,[]);m.get(k).push(s);}return [...m.values()];}
+class StringCodec {encode(strs){return JSON.stringify(strs);}decode(data){return JSON.parse(data);}}
+function maxDepth(root){return root?1+Math.max(maxDepth(root.left),maxDepth(root.right)):0;}
+function isSameTree(p,q){return p&&q?p.val===q.val&&isSameTree(p.left,q.left)&&isSameTree(p.right,q.right):p===q;}
+function invertTree(root){if(root){const l=invertTree(root.left),r=invertTree(root.right);root.left=r;root.right=l;}return root;}
+function maxPathSum(root){let best=-Infinity;function f(n){if(!n)return 0;const a=Math.max(0,f(n.left)),b=Math.max(0,f(n.right));best=Math.max(best,n.val+a+b);return n.val+Math.max(a,b);}f(root);return best;}
+function levelOrder(root){const out=[];function dfs(n,d){if(!n)return;(out[d]??=[]).push(n.val);dfs(n.left,d+1);dfs(n.right,d+1);}dfs(root,0);return out;}
+class TreeCodec {serialize(root){const f=n=>n?[n.val,f(n.left),f(n.right)]:null;return JSON.stringify(f(root));}deserialize(data){const f=a=>a?new TreeNode(a[0],f(a[1]),f(a[2])):null;return f(JSON.parse(data));}}
+function isSubtree(root,subRoot){return root?isSameTree(root,subRoot)||isSubtree(root.left,subRoot)||isSubtree(root.right,subRoot):false;}
+function buildTree(preorder,inorder){if(!preorder.length)return null;const v=preorder[0],i=inorder.indexOf(v);return new TreeNode(v,buildTree(preorder.slice(1,i+1),inorder.slice(0,i)),buildTree(preorder.slice(i+1),inorder.slice(i+1)));}
+function isValidBST(root){function f(n,lo,hi){return !n||n.val>lo&&n.val<hi&&f(n.left,lo,n.val)&&f(n.right,n.val,hi);}return f(root,-Infinity,Infinity);}
+function kthSmallest(root,k){const a=[];function f(n){if(n){f(n.left);a.push(n.val);f(n.right);}}f(root);return a[k-1];}
+function lowestCommonAncestor(root,p,q){while(root){if(p.val<root.val&&q.val<root.val)root=root.left;else if(p.val>root.val&&q.val>root.val)root=root.right;else return root;}return null;}
+class Trie {constructor(){this.words=new Set();}insert(s){this.words.add(s);}search(s){return this.words.has(s);}startsWith(p){return [...this.words].some(s=>s.startsWith(p));}}
+class WordDictionary {constructor(){this.words=new Set();}addWord(s){this.words.add(s);}search(p){return [...this.words].some(s=>s.length===p.length&&[...p].every((c,i)=>c==='.'||c===s[i]));}}
+function findWords(board,words){function exists(w){const seen=new Set();function dfs(r,c,i){if(i===w.length)return true;if(r<0||c<0||r>=board.length||c>=board[0].length||seen.has(r+','+c)||board[r][c]!==w[i])return false;seen.add(r+','+c);const found=dfs(r+1,c,i+1)||dfs(r-1,c,i+1)||dfs(r,c+1,i+1)||dfs(r,c-1,i+1);seen.delete(r+','+c);return found;}return board.some((row,r)=>row.some((_,c)=>dfs(r,c,0)));}return [...new Set(words)].filter(exists);}
+class MedianFinder {constructor(){this.values=[];}addNum(n){this.values.push(n);}findMedian(){const a=[...this.values].sort((a,b)=>a-b),m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;}}
