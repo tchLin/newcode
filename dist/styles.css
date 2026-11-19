@@ -8,3 +8,19 @@
 .panel-heading,.panel-heading select,.file-tabs button,.file-tabs>span,.run-bar button,.run-bar>span,.result-row,.assistant-body>label,#chat-form>label,#chat-form .checkbox,.model-box button,.session-controls button,.editor-tools button,.filters select{font-size:.875rem}
 .progress-orbit div>span{font-size:.75rem}
 @media(max-width:760px){.progress-orbit{display:none}.header nav{font-size:.875rem}.patterns{grid-template-columns:1fr 1fr}.pattern>div{font-size:.875rem}}
+
+.session-download{margin:20px 0;padding-top:16px;border-top:1px solid var(--border)}
+.session-download button{width:100%;font-size:.875rem}
+.session-download .small{margin-top:10px;font-size:.75rem}
+.message small{display:block;margin-top:8px;color:var(--muted);font-size:.75rem}
+.session-history{margin-top:36px}
+.saved-sessions{border:1px solid var(--border);border-radius:9px;overflow:hidden}
+.saved-sessions article{padding:18px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid var(--border)}
+.saved-sessions article:last-child{border-bottom:0}
+.saved-sessions strong{font-size:.875rem;font-weight:500}
+.saved-sessions p{font-size:.75rem;margin:6px 0 0}
+.saved-sessions button{flex-shrink:0}
+#legacy-history:not(:empty){margin-top:24px}
+#legacy-history button{margin:0 8px 8px 0}
+@media(max-width:760px){.session-controls{flex-wrap:wrap}.saved-sessions article{flex-wrap:wrap}.saved-sessions article>div{min-width:0}}
+.session-download button+button{margin-top:8px}.history-downloads{display:flex;gap:8px;flex-shrink:0}

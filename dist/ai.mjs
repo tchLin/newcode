@@ -23,8 +23,8 @@ export async function connect(onProgress){
 export function buildMessages(prompt,context,history){
  return [{role:'system',content:'You are a concise junior coding partner in interview practice. Help with the scoped request. Do not claim to run tests or edit files. State assumptions. The candidate reviews and manually applies suggestions.\n'+context.slice(0,4000)},...history.slice(-2).map(m=>({role:m.role,content:m.content.slice(0,450)})),{role:'user',content:prompt.slice(0,1000)}];
 }
-export async function ask(prompt,context,history,onText){
+export async function ask(prompt,context,history,onText,requestMessages,onMetadata=()=>{}){
  if(!engine)throw new Error('Load the local model first.');
- const stream=await engine.chat.completions.create({messages:buildMessages(prompt,context,history),max_tokens:600,temperature:0.3,stream:true});
- let reply='';for await(const chunk of stream){reply+=chunk.choices[0]?.delta?.content||'';onText(reply);}return reply;
+ const stream=await engine.chat.completions.create({messages:requestMessages||buildMessages(prompt,context,history),max_tokens:600,temperature:0.3,stream:true});
+ let reply='',finishReason=null;for await(const chunk of stream){reply+=chunk.choices[0]?.delta?.content||'';finishReason=chunk.choices[0]?.finish_reason||finishReason;onText(reply);}onMetadata({finishReason});return reply;
 }

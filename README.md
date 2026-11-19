@@ -12,7 +12,7 @@ npm run dev
 
 Open **http://127.0.0.1:5173**. Requires Python 3 for the local HTTP server. Do not open `index.html` as a `file://` URL: module scripts and workers require HTTP or HTTPS.
 
-No package installation is needed to run, test, or publish the committed site. Node.js 22+ is used for checks:
+No package installation is needed to run, test, or publish the committed site. Node.js 22+ and Python 3 (for independent ZIP validation) are used for checks:
 
 ```sh
 npm test
@@ -41,7 +41,8 @@ The project repository is https://github.com/tchLin/newcode. GitHub Pages is con
 - **75 original visual lessons**, preserved from Algo Arcade and accessible through “Visual games” or each problem's visual learning link. Games and the new library share progress on the same origin.
 - **Three multi-file interview labs:** a stale cache and service, a cursor-paginated feed, and an event aggregation pipeline. Each has two editable JavaScript modules, eight acceptance checks, a 45- or 60-minute timer, review prompts, and saved notes.
 - **Optional local AI:** read-only Qwen 2.5 Coder 1.5B chat, with a solo mode. You review suggestions and manually edit code.
-- **Progress export/import:** portable JSON backups. Session exports include the current work and conversation. Imported drafts replace matching local drafts; import does not run code.
+- **Progress export/import:** portable JSON backups. Imported drafts replace matching local drafts; import does not run code.
+- **Conversation and review exports:** direct JSON logs or a ZIP containing a readable report, JSON, and final code. Full session history is saved separately in IndexedDB and can be downloaded from My progress.
 
 The interview labs apply the practice strategy in [`doc/lightweight-model-coding-interview-summary.md`](doc/lightweight-model-coding-interview-summary.md). The source document's company-specific claims, hardware limits, and speed estimates are not presented as verified facts on the site. The labs are small educational repositories, not replicas of any employer's interview.
 
@@ -55,7 +56,7 @@ The AI module uses the documented [WebLLM worker API](https://webllm.mlc.ai/docs
 - Inference runs locally. The application does not send prompts to a hosted model API.
 - Context includes the problem brief and, if checked, up to 3,000 characters of the selected file. Total context and recent conversation are truncated for the small context window. The model cannot inspect the whole repository, run tests, or apply edits.
 - Leaving the workspace or switching to solo mode terminates the model worker. “Unload model” also cancels an in-progress load. Loading times out after five minutes.
-- Lab transcripts are saved locally and bounded to the most recent 40 messages. Algorithm-practice conversations last for the current page session. Lab progress backups contain transcripts, but importing backups restores code, notes, and progress only; use session exports to retain conversation records.
+- New conversation logs have no 40-message cap. Complete recorded AI turns are stored with each session in IndexedDB. The model still receives only bounded recent context. Each workspace visit starts a separate session; older sessions remain downloadable from My progress. Older retained lab chats are available as clearly labelled legacy JSON, without reconstructed context or test history.
 - Generation errors, including memory or context limits, are displayed in the chat panel. Generated advice may be wrong; the workflow is intentionally built around reviewing and testing it.
 
 ## Code execution and persistence
@@ -66,7 +67,27 @@ The six other languages reuse Algo Arcade's remote runners: Wandbox for C/C++/Ja
 
 Practice results are client-side feedback, not an authoritative judge. Workers keep long-running code off the UI thread; they are not hardened security sandboxes. Tests check bounded fixtures and do not establish asymptotic complexity, even when a lab contains a larger test case.
 
-Data lives in browser localStorage (`algo-arcade-v1` and `newcode-labs-v1`), scoped to the site origin. Clearing site storage removes it. Different browsers/devices do not synchronize. Export/import provides manual transfer. Opening the old app on a different origin does not migrate its storage automatically. Tabs do not provide conflict-free concurrent editing.
+Progress lives in browser localStorage (`algo-arcade-v1` and `newcode-labs-v1`); full session logs live in IndexedDB (`newcode-session-history`), scoped to the site origin. Clearing site storage removes it. Different browsers/devices do not synchronize. Export/import provides manual transfer. Opening the old app on a different origin does not migrate its storage automatically. Tabs do not provide conflict-free concurrent editing.
+
+## Conversation logs and review bundles
+
+Use **Download JSON** in the workspace header or **Download conversation JSON** in the assistant panel. Use **Review bundle** for a single ZIP with `report.md`, `session.json`, `README.txt`, and final code files. Both exports include the same JSON data. CSV is not included: nested conversation/context/test data is represented directly in JSON.
+
+Each log uses `format: "newcode-session"` and `schemaVersion: 1`, with a unique session ID and UTC timestamps. It records:
+
+- Problem brief, checks, track, difficulty, and whether it was already solved when the session opened.
+- Full prompts and responses, the exact bounded messages sent to the model, model/settings, selected file, code-context choice, completion time, and operation status.
+- Immutable, deduplicated code checkpoints at opening, AI requests, test attempts, and closing/export; final work and review notes are retained separately. This is not a keystroke recording.
+- Test results, failures, compiler notes, language/provider, hint opens, mode switches, file resets, and timer controls.
+- Observable activity summaries and reflection suggestions. Counts and elapsed time are not interpreted as a skill score. Run progression is separated by language. A test after an AI response is not treated as proof that advice was used or caused improvement.
+
+Sessions are saved automatically, with edits debounced and streaming text checkpointed about once per second. **My progress → Conversation & session history** provides JSON and ZIP downloads for previous visits. Closing/navigating interrupts pending work; a crash may leave the last saved status pending and can lose the latest unsaved changes. Export an important session before closing. If IndexedDB is unavailable or full, a warning appears and the session stays downloadable in memory until the page closes. There is no server upload or background analysis service.
+
+Session JSON and ZIP are **analysis artifacts**, separate from resumable progress backups; the progress importer does not restore session archives. Prior sessions are not automatically fed into a new conversation. Older retained lab chats remain downloadable separately; messages that were previously discarded cannot be recovered.
+
+The ZIP uses the store method for portability and has no CSV; it bundles files rather than compressing them. Direct JSON is the smallest provided export because it omits the readable report and separate code copies. JSON is not inherently smaller than CSV; its advantage here is preserving nested structures. Identical code checkpoints are stored once and referenced by ID.
+
+The bundle's guide includes an optional review prompt for another AI: cite event/checkpoint IDs, separate evidence from uncertainty, and suggest specific practice exercises. Sharing is entirely the user's choice; exports include their prompts and code. See [the session format](doc/session-format.md) for field definitions and a parsing example.
 
 ## Reuse and project layout
 
@@ -81,7 +102,11 @@ dist/labs.mjs                  Three original interview briefs and starter files
 dist/lab-tests.mjs             Multi-file loader and lab acceptance checks
 dist/lab-runner.mjs            Disposable lab worker entry point
 dist/ai.mjs, ai-worker.mjs      Optional local WebLLM integration
-dist/storage.mjs               Local persistence and backup validation
+dist/storage.mjs               Progress persistence and backup validation
+dist/session-log.mjs           Session events, checkpoints, observations
+dist/session-store.mjs         IndexedDB history with in-memory fallback
+dist/session-export.mjs        Versioned JSON and readable review reports
+dist/zip.mjs                   Dependency-free ZIP archive writer
 dist/arcade/                   Reused Algo Arcade app, questions, and runtime
 src/editor.mjs                 Reused CodeMirror source
 scripts/build-editor.mjs       Optional editor bundle rebuild
@@ -97,10 +122,10 @@ To change the bundled editor, run `npm ci`, edit `src/editor.mjs`, and run `npm 
 
 ## Verification
 
-- **67 automated tests pass**, including the 48 reused tests, 24 acceptance checks across three independently implemented lab solutions, deliberately incomplete starters, storage validation, AI context limits/cancellation, and worker timeout/cancellation/recovery.
+- **81 automated tests pass**, including the 48 reused tests, 24 acceptance checks across three independently implemented lab solutions, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, and independent Python ZIP verification.
 - Browser worker entry points were exercised with a Node worker transport. This verifies module paths and execution behavior, but does not substitute for browser QA.
-- **36 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
+- **40 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
 - **GitHub Pages deployment verified:** the Actions workflow passed all checks and deployed successfully on November 19, 2026. The public homepage and app module both returned HTTP 200.
-- **Not verified here:** visual rendering and browser interactions, an actual WebGPU model download/generation, fresh live submissions to external compiler providers, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
+- **Not verified here:** visual rendering and browser interactions (including IndexedDB persistence/download UI), an actual WebGPU model download/generation, fresh live submissions to external compiler providers, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
 
 Before sharing publicly, open the site in your target desktop/mobile browsers, complete a sample problem and lab, check backup import/export, load the optional model on a compatible device, and check any remote languages you intend to support.
