@@ -69,9 +69,15 @@ Practice results are client-side feedback, not an authoritative judge. Workers k
 
 Progress lives in browser localStorage (`algo-arcade-v1` and `newcode-labs-v1`); full session logs live in IndexedDB (`newcode-session-history`), scoped to the site origin. Clearing site storage removes it. Different browsers/devices do not synchronize. Export/import provides manual transfer. Opening the old app on a different origin does not migrate its storage automatically. Tabs do not provide conflict-free concurrent editing.
 
+## Workspace layout
+
+On desktop, the statement, code, tests, and AI conversation scroll independently inside the viewport. The chat composer remains below the conversation, and scrolling up to read older replies suspends automatic scrolling until you return to the bottom or choose **Jump to latest**. After loading, the model setup collapses to a compact **Model ready** row with an **Unload** control. Export options are in the **Download conversation** disclosure at the bottom of the assistant panel.
+
+On narrow or very short screens, the panels stack, each with its own bounded scroll area. The page scrolls between panels while long statements and conversations scroll inside their panels.
+
 ## Conversation logs and review bundles
 
-Use **Download JSON** in the workspace header or **Download conversation JSON** in the assistant panel. Use **Review bundle** for a single ZIP with `report.md`, `session.json`, `README.txt`, and final code files. Both exports include the same JSON data. CSV is not included: nested conversation/context/test data is represented directly in JSON.
+At the bottom of the coding partner panel, expand **Download conversation** and choose **Download JSON**. Use **Review bundle** for a single ZIP with `report.md`, `session.json`, `README.txt`, and final code files. Both exports include the same JSON data. CSV is not included: nested conversation/context/test data is represented directly in JSON.
 
 Each log uses `format: "newcode-session"` and `schemaVersion: 1`, with a unique session ID and UTC timestamps. It records:
 

@@ -53,10 +53,38 @@ function problemList(){
  document.querySelectorAll('[data-bookmark]').forEach(b=>b.onclick=()=>{const id=b.dataset.bookmark;progress[id]={...progress[id],bookmark:!progress[id]?.bookmark};save();problemList();});if($('#clear-filters'))$('#clear-filters').onclick=()=>{filters={search:'',topic:'All topics',difficulty:'All levels',status:'All problems'};library();};
 }
 function interviews(){main.className='page';main.innerHTML=`<section class="page-heading"><div><div class="eyebrow">THE INTERVIEW LAB</div><h1>A small model.<br><span>A bigger role for you.</span></h1><p>Scope the request. Review the suggestion. Own the result.</p></div><div class="lab-illustration" aria-hidden="true">{ <span>you</span> + ai }</div></section><div class="info-strip"><span>▤ &nbsp; Real multi-file exercises</span><span>◷ &nbsp; 45–60 minute sessions</span><span>⌘ &nbsp; Optional local AI</span></div><div class="lab-grid">${labs.map((g,i)=>`<a href="#lab/${g.id}" class="lab-card"><div class="card-top"><span class="eyebrow">${g.category.toUpperCase()}</span>${badge(g)}</div><div class="lab-glyph" aria-hidden="true">${['{ ttl }','[ cursor ]','Σ events'][i]}</div><h2>${g.title}</h2><p>${g.description}</p><div class="track-meta"><span>${g.time} min · ${Object.keys(g.files).length} files</span><strong>${labState[g.id]?.solved?'Review completed lab':'Start challenge'}</strong></div></a>`).join('')}</div><section class="method"><div><div class="eyebrow">PRACTICE THE WHOLE INTERVIEW</div><h2>The code is only half the work.</h2></div><ol><li><strong>Understand the workspace.</strong> Read the files and find the boundary of the problem.</li><li><strong>Use AI with intention.</strong> Ask for a small, testable change. Suggestions never edit your files.</li><li><strong>Review and explain.</strong> Run the tests, consider edge cases, and write down your trade-offs.</li></ol></section>${footer()}`;}
+function assistantPanel(){return `<aside class="assistant panel" aria-label="Coding partner">
+ <div class="panel-heading"><span>✳ &nbsp; Coding partner</span><span class="model-label">LOCAL AI</span></div>
+ <div class="assistant-body">
+  <div class="practice-mode"><label for="mode">Mode</label><select id="mode"><option value="assisted">AI-assisted</option><option value="strict">Solo · no AI</option></select></div>
+  <div id="ai-content">
+   <section class="model-box" id="model-box" data-state="idle" aria-label="Local model">
+    <div class="model-ready" id="model-ready" hidden><span><strong role="status">✓ Model ready</strong><small>Qwen 2.5 Coder · 1.5B</small></span><button id="unload-ai" class="quiet-button">Unload</button></div>
+    <div class="model-setup">
+     <strong>Qwen 2.5 Coder · 1.5B</strong>
+     <p>Optional local AI. First use downloads about 1 GB; allow 2 GB of GPU memory. Review its suggestions before using them.</p>
+     <div class="model-actions"><button id="load-ai">Load local model</button><button id="stop-ai" hidden>Cancel load</button></div>
+     <p id="ai-status" role="status">WebGPU browser required. No API key.</p>
+    </div>
+   </section>
+   <div class="conversation-frame">
+    <div id="messages" class="messages" role="log" aria-label="Conversation history" aria-live="polite" aria-relevant="additions text" tabindex="0"></div>
+    <button id="latest-message" hidden>Jump to latest</button>
+   </div>
+   <form id="chat-form">
+    <label for="chat-prompt">Ask a focused question</label>
+    <textarea id="chat-prompt" maxlength="1000" placeholder="What edge case am I missing?" required></textarea>
+    <div class="composer-actions"><label class="checkbox" title="Include up to 3,000 characters of the selected file"><input id="include-code" type="checkbox" checked> Include current file</label><button class="primary" id="send" disabled>Send</button></div>
+   </form>
+  </div>
+  <div id="solo-content" hidden><h2>Just you and the problem.</h2><p>The assistant is hidden for this session. Built-in hints and tests are still available.</p></div>
+  <details class="session-download"><summary>Download conversation</summary><div class="session-download-content"><div class="export-actions"><button id="download-conversation-json">Download JSON</button><button id="download-conversation">Review bundle</button></div><p class="small">JSON for analysis, or a ZIP with a report and code. Includes your prompts and code. Each visit starts a new session; saved logs are in <a href="#progress">My progress</a>.</p></div></details>
+ </div>
+ </aside>`;}
 function workspace(g,isLab){
  current={...g,isLab};const s=isLab?state():null;if(isLab){s.files||={};s.messages||=[];file=Object.keys(g.files)[0];}else file=null;
  main.className='workspace';
- main.innerHTML=`<div class="workspace-heading"><a href="${isLab?'#interviews':'#'}" class="text-link">${isLab?'Interview lab':'Problem library'}</a><span>/</span><strong>${esc(title(g))}</strong><div class="session-controls">${isLab?'<span id="timer" class="timer"></span><button id="timer-toggle">Start timer</button>':'<span class="browser-runtime">Drafts autosave</span>'}<button id="export-session-json">Download JSON</button><button id="export-session">Review bundle</button></div></div><div class="work-grid"><section class="brief panel"><div class="panel-heading"><span>▤ &nbsp; Description</span>${badge(g)}</div><div class="brief-body"><div class="eyebrow">${isLab?g.tag:g.category+' / #'+g.number}</div><h1>${esc(title(g))}</h1><p>${esc(g.prompt)}</p>${isLab?`<h3>Acceptance checks</h3><ol class="checks">${g.cases.map(x=>`<li>${x}</li>`).join('')}</ol>`:`<h3>Example</h3><div class="example"><span>INPUT</span><pre>${esc(g.tests[0].args.map(x=>JSON.stringify(x)).join(', '))}</pre><span>OUTPUT</span><pre>${esc(JSON.stringify(expectedValue(g,g.tests[0])))}</pre></div><div id="contract"></div>`}<details class="hint"><summary>Need a nudge?</summary><p id="hint-text">${esc(isLab?g.hint:languageHelp(g,language).hint)}</p></details>${!isLab?`<a class="visual-link" href="arcade/#play/${g.id}">▦ Learn this pattern visually</a><label for="notes">Your review notes</label><textarea id="notes" placeholder="What did you change, verify, or learn?"></textarea>`:`<h3>Defend your decisions</h3><ul class="checks">${g.review.map(x=>`<li>${x}</li>`).join('')}</ul><label for="notes">Your review notes</label><textarea id="notes" placeholder="Explain your approach and trade-offs…">${esc(s.notes||'')}</textarea>`}</div></section><section class="editor-column panel"><div class="panel-heading"><span>⌘ &nbsp; Workspace</span>${isLab?'<span class="muted">JavaScript</span>':`<label class="sr-only" for="language">Language</label><select id="language">${languages.map(l=>`<option value="${l.id}" ${l.id===language?'selected':''}>${l.label}</option>`).join('')}</select>`}</div><div class="file-tabs" id="file-tabs"></div><div id="editor"></div><div class="editor-tools"><span id="editor-help">Tab to indent · Esc then Tab to leave · ⌘/Ctrl Enter to run</span><button id="reset" class="quiet-button">Reset file</button></div><div class="run-bar"><span id="runtime"></span><button id="cancel" hidden>Cancel</button><button id="run" class="primary">Run tests</button></div><section class="test-panel"><div class="panel-heading">Test results <span class="muted">${isLab?g.cases.length:g.tests.length} checks</span></div><div id="results" role="status" aria-live="polite"><div class="results-empty"><span>⌁</span><h3>Make a change. See what happens.</h3><p>Your test results will appear here.</p></div></div></section></section><aside class="assistant panel"><div class="panel-heading"><span>✳ &nbsp; Coding partner</span><span class="model-label">LOCAL AI</span></div><div class="assistant-body"><label for="mode">Practice mode</label><select id="mode"><option value="assisted">AI-assisted</option><option value="strict">Solo · no AI</option></select><div id="ai-content"><div class="ai-intro"><span class="ai-symbol">✳</span><h2>You’re in the driver’s seat.</h2><p>A lightweight coding model for small questions and second opinions. Review everything it suggests.</p></div><div class="model-box"><strong>Qwen 2.5 Coder · 1.5B</strong><p>Runs on your GPU. First use downloads roughly 1 GB of model files; allow about 2 GB of GPU memory. No API key.</p><button id="load-ai">${ai.ready()?'Model ready':'Load local model'}</button><button id="stop-ai" class="quiet-button" ${ai.ready()?'':'hidden'}>Unload model</button><p id="ai-status" role="status">${ai.ready()?'Ready on this device.':'WebGPU browser required. Loading is optional.'}</p></div><div class="session-download"><button id="download-conversation-json">Download conversation JSON</button><button id="download-conversation">Download review bundle</button><p class="small">JSON for analysis, or a ZIP with the report, full JSON log and code. Includes your prompts and code. Each visit starts a new session; previous logs are in My progress.</p></div><div id="messages" class="messages" aria-live="polite"></div><form id="chat-form"><label for="chat-prompt">Ask a focused question</label><textarea id="chat-prompt" maxlength="1000" placeholder="What edge case am I missing?" required></textarea><label class="checkbox"><input id="include-code" type="checkbox" checked> Include the current file (up to 3,000 characters)</label><button class="primary" id="send" ${ai.ready()?'':'disabled'}>Send message</button></form><p class="small">Only the brief and selected file are included. Responses never edit or execute code. Prompts stay in this browser.</p></div><div id="solo-content" hidden><h2>Just you and the problem.</h2><p>The assistant is hidden for this session. Built-in hints and tests are still available.</p></div></div></aside></div>`;
+ main.innerHTML=`<div class="workspace-heading"><a href="${isLab?'#interviews':'#'}" class="text-link">${isLab?'Interview lab':'Problem library'}</a><span>/</span><strong>${esc(title(g))}</strong><div class="session-controls">${isLab?'<span id="timer" class="timer"></span><button id="timer-toggle">Start timer</button>':'<span class="browser-runtime">Drafts autosave</span>'}</div></div><div class="work-grid"><section class="brief panel"><div class="panel-heading"><span>▤ &nbsp; Description</span>${badge(g)}</div><div class="brief-body" role="region" aria-label="Problem statement" tabindex="0"><div class="eyebrow">${isLab?g.tag:g.category+' / #'+g.number}</div><h1>${esc(title(g))}</h1><p>${esc(g.prompt)}</p>${isLab?`<h3>Acceptance checks</h3><ol class="checks">${g.cases.map(x=>`<li>${x}</li>`).join('')}</ol>`:`<h3>Example</h3><div class="example"><span>INPUT</span><pre>${esc(g.tests[0].args.map(x=>JSON.stringify(x)).join(', '))}</pre><span>OUTPUT</span><pre>${esc(JSON.stringify(expectedValue(g,g.tests[0])))}</pre></div><div id="contract"></div>`}<details class="hint"><summary>Need a nudge?</summary><p id="hint-text">${esc(isLab?g.hint:languageHelp(g,language).hint)}</p></details>${!isLab?`<a class="visual-link" href="arcade/#play/${g.id}">▦ Learn this pattern visually</a><label for="notes">Your review notes</label><textarea id="notes" placeholder="What did you change, verify, or learn?"></textarea>`:`<h3>Defend your decisions</h3><ul class="checks">${g.review.map(x=>`<li>${x}</li>`).join('')}</ul><label for="notes">Your review notes</label><textarea id="notes" placeholder="Explain your approach and trade-offs…">${esc(s.notes||'')}</textarea>`}</div></section><section class="editor-column panel"><div class="panel-heading"><span>⌘ &nbsp; Workspace</span>${isLab?'<span class="muted">JavaScript</span>':`<label class="sr-only" for="language">Language</label><select id="language">${languages.map(l=>`<option value="${l.id}" ${l.id===language?'selected':''}>${l.label}</option>`).join('')}</select>`}</div><div class="file-tabs" id="file-tabs"></div><div id="editor"></div><div class="editor-tools"><span id="editor-help">Tab to indent · Esc then Tab to leave · ⌘/Ctrl Enter to run</span><button id="reset" class="quiet-button">Reset file</button></div><div class="run-bar"><span id="runtime"></span><button id="cancel" hidden>Cancel</button><button id="run" class="primary">Run tests</button></div><section class="test-panel"><div class="panel-heading">Test results <span class="muted">${isLab?g.cases.length:g.tests.length} checks</span></div><div id="results" role="status" aria-live="polite"><div class="results-empty"><span>⌁</span><h3>Make a change. See what happens.</h3><p>Your test results will appear here.</p></div></div></section></section>${assistantPanel()}</div>`;
  renderEditor();$('#run').onclick=run;$('#cancel').onclick=()=>active?.abort();$('#reset').onclick=resetFile;
  if(isLab){$('#notes').oninput=e=>{s.notes=e.target.value;captureFinal();save();scheduleSessionSave();};$('#timer-toggle').onclick=toggleTimer;updateTimer();ticker=setInterval(updateTimer,1000);}else $('#language').onchange=e=>{active?.abort();language=e.target.value;renderEditor();captureFinal();logEvent('language.changed',{language});};
  session=createSession({id:g.id,title:title(g),prompt:g.prompt,track:isLab?'interview-lab':'algorithm',difficulty:g.difficulty||'Easy',checks:isLab?g.cases:g.tests,previouslySolved:isLab?!!s.solved:!!progress[g.id]?.solved},s?.mode||'assisted',ai.MODEL);
@@ -64,8 +92,8 @@ function workspace(g,isLab){
  if(!isLab)$('#notes').oninput=()=>{captureFinal();scheduleSessionSave();};
  const prepareExport=()=>{captureFinal();snapshot(session,session.final.files,session.final.language);persistSession();};
  const exportCurrent=()=>{prepareExport();downloadBundle(session);};
- $('#export-session').onclick=exportCurrent;$('#download-conversation').onclick=exportCurrent;
- const exportJSON=()=>{prepareExport();downloadSessionJSON(session);};$('#export-session-json').onclick=exportJSON;$('#download-conversation-json').onclick=exportJSON;
+ $('#download-conversation').onclick=exportCurrent;
+ const exportJSON=()=>{prepareExport();downloadSessionJSON(session);};$('#download-conversation-json').onclick=exportJSON;
  $('.hint').ontoggle=e=>{if(e.target.open)logEvent('hint.opened');};
  setupChat(s?.mode||'assisted');
 
@@ -99,16 +127,42 @@ async function run(){
 function updateTimer(){const s=state();const remaining=s.deadline?Math.max(0,Math.ceil((s.deadline-Date.now())/1000)):(s.remaining??current.time*60);$('#timer').textContent=`${Math.floor(remaining/60).toString().padStart(2,'0')}:${(remaining%60).toString().padStart(2,'0')}`;$('#timer-toggle').textContent=s.deadline?'Pause timer':remaining===0?'Restart timer':'Start timer';if(s.deadline&&remaining===0){s.deadline=null;s.remaining=0;save();notice('Time is up. You can finish your work and review your decisions.');}}
 function toggleTimer(){const s=state();if(s.deadline){s.remaining=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));s.deadline=null;}else{s.deadline=Date.now()+((s.remaining||current.time*60)*1000);}save();logEvent('timer.changed',{action:s.deadline?'started':'paused',remainingSeconds:s.deadline?Math.ceil((s.deadline-Date.now())/1000):s.remaining});updateTimer();}
 function messages(){return session?sessionMessages(session):[];}
-function renderMessages(){const root=$('#messages');if(!root)return;root.innerHTML=messages().map(m=>`<article class="message ${m.role}"><strong>${m.role==='user'?'You':'Coding partner'}</strong><pre>${esc(m.content)}</pre>${m.role==='assistant'&&m.status!=='completed'?`<small>${esc(m.status)}</small>`:''}</article>`).join('');root.scrollTop=root.scrollHeight;}
+function updateLatestButton(){const root=$('#messages');if(root)$('#latest-message').hidden=root.scrollHeight-root.clientHeight-root.scrollTop<48;}
+function renderMessages({follow=false}={}){
+ const root=$('#messages');if(!root)return;
+ const stickToBottom=follow||root.scrollHeight-root.clientHeight-root.scrollTop<48;
+ const position=root.scrollTop,history=messages();
+ if(!history.length){root.innerHTML='<p class="chat-empty">Ask a focused question to start. Your conversation stays here as it grows.</p>';$('#latest-message').hidden=true;return;}
+ root.querySelector('.chat-empty')?.remove();
+ history.forEach((m,index)=>{
+  let row=root.children[index];
+  if(!row){row=document.createElement('article');row.className='message '+m.role;row.append(document.createElement('strong'),document.createElement('pre'),document.createElement('small'));root.append(row);}
+  row.children[0].textContent=m.role==='user'?'You':'Coding partner';
+  if(row.children[1].textContent!==m.content)row.children[1].textContent=m.content;
+  row.children[2].hidden=m.role!=='assistant'||m.status==='completed';row.children[2].textContent=m.status||'';
+ });
+ while(root.children.length>history.length)root.lastElementChild.remove();
+ root.scrollTop=stickToBottom?root.scrollHeight:position;updateLatestButton();
+}
+function setModelUI(state,text){
+ $('#model-box').dataset.state=state;$('#model-ready').hidden=state!=='ready';
+ $('#load-ai').disabled=state==='loading';$('#load-ai').textContent=state==='loading'?'Loading…':'Load local model';
+ $('#stop-ai').hidden=state!=='loading';$('#send').disabled=state!=='ready'||chatBusy;
+ $('#ai-status').textContent=text;updateLatestButton();
+}
 function setupChat(mode){
  $('#mode').value=mode;
- const setMode=()=>{const strict=$('#mode').value==='strict';$('#ai-content').hidden=strict;$('#solo-content').hidden=!strict;if(current.isLab){state().mode=$('#mode').value;save();}if(strict){cancelTurn('Switched to solo mode.');ai.unload();chatEpoch++;chatBusy=false;$('#send').disabled=true;$('#load-ai').disabled=false;$('#load-ai').textContent='Load local model';$('#stop-ai').hidden=true;$('#ai-status').textContent='Model unloaded for solo mode.';}};
- $('#mode').onchange=()=>{logEvent('mode.changed',{mode:$('#mode').value});setMode();renderMessages();};setMode();renderMessages();
- $('#load-ai').onclick=async()=>{if(ai.ready())return;const status=$('#ai-status'),button=$('#load-ai'),epoch=chatEpoch;button.disabled=true;$('#stop-ai').hidden=false;status.textContent='Checking GPU and loading model…';
-  try{await ai.connect(text=>{if(status.isConnected)status.textContent=text;});if(epoch!==chatEpoch)return;button.textContent='Model ready';status.textContent='Ready. Inference runs locally on your device.';$('#send').disabled=false;}
-  catch(error){if(status.isConnected)status.textContent=error.message;button.disabled=false;}
+ const unloadModel=reason=>{cancelTurn(reason);ai.unload();chatEpoch++;chatBusy=false;setModelUI('idle','Model unloaded. Cached files can be reused when you load it again.');renderMessages();};
+ const setMode=()=>{const strict=$('#mode').value==='strict';$('#ai-content').hidden=strict;$('#solo-content').hidden=!strict;if(current.isLab){state().mode=$('#mode').value;save();}if(strict)unloadModel('Switched to solo mode.');};
+ $('#mode').onchange=()=>{logEvent('mode.changed',{mode:$('#mode').value});setMode();renderMessages();};setMode();setModelUI(ai.ready()?'ready':'idle',ai.ready()?'Ready on this device.':'WebGPU browser required. No API key.');renderMessages();
+ $('#messages').onscroll=updateLatestButton;
+ $('#latest-message').onclick=()=>{const root=$('#messages');root.scrollTop=root.scrollHeight;updateLatestButton();root.focus({preventScroll:true});};
+ $('#load-ai').onclick=async()=>{if(ai.ready())return;const status=$('#ai-status'),epoch=chatEpoch;setModelUI('loading','Checking GPU and loading model…');
+  try{await ai.connect(text=>{if(epoch===chatEpoch&&status.isConnected)status.textContent=text;});if(epoch!==chatEpoch)return;setModelUI('ready','Ready. Inference runs locally on your device.');renderMessages();$('#chat-prompt').focus({preventScroll:true});}
+  catch(error){if(epoch===chatEpoch&&status.isConnected)setModelUI('idle',error.message);}
  };
- $('#stop-ai').onclick=()=>{cancelTurn('Model unloaded by the user.');ai.unload();chatEpoch++;chatBusy=false;$('#send').disabled=true;$('#load-ai').disabled=false;$('#load-ai').textContent='Load local model';$('#stop-ai').hidden=true;$('#ai-status').textContent='Model unloaded. Cached downloads may remain in browser storage.';renderMessages();};
+ $('#stop-ai').onclick=()=>unloadModel('Model loading cancelled by the user.');
+ $('#unload-ai').onclick=()=>unloadModel('Model unloaded by the user.');
  $('#chat-form').onsubmit=async e=>{
   e.preventDefault();if(chatBusy||!ai.ready())return;
   const prompt=$('#chat-prompt').value.trim();if(!prompt)return;
@@ -118,7 +172,7 @@ function setupChat(mode){
   const context=`Problem: ${title(current)}\n${current.prompt}\n${includeCode?`Current file (${selectedFile}):\n${editor.getValue().slice(0,3000)}`:''}`;
   const request=ai.buildMessages(prompt,context,previous);captureFinal();
   const event=recordEvent(owner,'ai.turn',{prompt,request,includeCode,selectedFile,language:lang,mode:$('#mode').value,model:ai.MODEL,generation:{temperature:0.3,max_tokens:600},snapshotId:snapshot(owner,workFiles(),lang),status:'streaming',response:''});
-  activeTurn={owner,event};persistSession(owner);chatBusy=true;$('#send').disabled=true;$('#chat-prompt').value='';renderMessages();
+  activeTurn={owner,event};persistSession(owner);chatBusy=true;$('#send').disabled=true;$('#chat-prompt').value='';renderMessages({follow:true});
   let lastSaved=0,finishReason=null;
   try{
    const reply=await ai.ask(prompt,context,previous,text=>{if(event.status!=='streaming')return;event.response=text;if(Date.now()-lastSaved>1000){lastSaved=Date.now();persistSession(owner);}if(epoch===chatEpoch)renderMessages();},request,metadata=>{finishReason=metadata.finishReason;});
