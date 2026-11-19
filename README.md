@@ -1,5 +1,7 @@
 # Newcode
 
+**Live site:** https://tchlin.github.io/newcode/
+
 A static coding-practice website built for GitHub Pages. Visitors can open the site and practice immediately; drafts, bookmarks, completions, and lab notes are saved in their browser. No account, server, database, or API key is required.
 
 ## Run locally
@@ -98,6 +100,7 @@ To change the bundled editor, run `npm ci`, edit `src/editor.mjs`, and run `npm 
 - **67 automated tests pass**, including the 48 reused tests, 24 acceptance checks across three independently implemented lab solutions, deliberately incomplete starters, storage validation, AI context limits/cancellation, and worker timeout/cancellation/recovery.
 - Browser worker entry points were exercised with a Node worker transport. This verifies module paths and execution behavior, but does not substitute for browser QA.
 - **36 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
-- **Not verified here:** visual rendering and browser interactions, an actual WebGPU model download/generation, fresh live submissions to external compiler providers, or a real GitHub Pages deployment. The browser automation host was unavailable and native Chrome access was not approved.
+- **GitHub Pages deployment verified:** the Actions workflow passed all checks and deployed successfully on November 19, 2026. The public homepage and app module both returned HTTP 200.
+- **Not verified here:** visual rendering and browser interactions, an actual WebGPU model download/generation, fresh live submissions to external compiler providers, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
 
 Before sharing publicly, open the site in your target desktop/mobile browsers, complete a sample problem and lab, check backup import/export, load the optional model on a compatible device, and check any remote languages you intend to support.
