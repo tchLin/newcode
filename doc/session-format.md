@@ -21,9 +21,18 @@ Every event has `id`, `type`, and `at`. Sequence order breaks timestamp ties. An
 - `session.started`, `session.ended`: session boundaries.
 - `ai.turn`: `prompt`, `response`, exact `request` messages, `model`, `generation` settings, `language`, `mode`, `selectedFile`, `includeCode`, `snapshotId`, `status`, and optionally `completedAt`, `finishReason`, `error`.
 - `test.run`: `language`, `mode`, `selectedFile`, `provider`, `snapshotId`, `status`, and optionally `completedAt`, `results` (name, passed, failure detail), `diagnostics`, `error`.
-- `hint.opened`, `mode.changed`, `language.changed`, `file.reset`, `timer.changed`: explicitly observed user activity.
+- `hint.revealed`: stable hint ID, level, title, exact text, language, and mode. Legacy sessions may use `hint.opened`.
+- `agent.run`: user prompt, mode, language, model, starting snapshot, status, summary, and step count.
+- `agent.request`: step, parent `runId`, exact request messages, streamed/full response, generation settings, finish reason when available, snapshot, and status.
+- `agent.action`: validated action or validation failure, step, parent run ID, outcome, optional prior source and tool result. Edit outcomes distinguish `awaiting_approval`, `accepted`, `rejected`, `applied`, and `error`. Approval does not prove an edit was applied.
+- `agent.finished`: terminal loop outcome (`completed`, `step_limit`, `cancelled`, or `error`) and summary. A model-provided summary is not independent proof of success.
+- `mode.changed`, `language.changed`, `file.reset`, `timer.changed`: explicitly observed user activity.
+
+Modes are `solo`, `hints`, `chat`, and `agent`. Older sessions retain their original `strict` / `assisted` names. Mode changes preserve the same session; prior assistance stays recorded. `test.run.source` is `user` or `agent` on new sessions.
 
 AI statuses are `streaming`, `completed`, `truncated` (model output limit), `error`, `cancelled` (explicit unload/solo/navigation cancellation), or `interrupted`. Test statuses are `running`, `completed`, `error`, `cancelled`, or `interrupted`. A completed test run can still contain failing checks. Cancellation cannot guarantee remote execution was stopped.
+
+Agent requests use `running` while generating and preserve partial streamed text when interrupted. The JSON analysis includes modes used, activity per mode, agent runs, applied/rejected edits, and invalid/failed actions. It does not grade ability or establish independence from outside tools.
 
 `request` is the exact message array sent to WebLLM, including the system prompt and any truncated recent context. The full transcript is retained in `events`, even though only a limited part is sent to the model. `includeCode` governs model context; exported checkpoints still contain the user's code, as stated next to the download controls.
 

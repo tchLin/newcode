@@ -5,7 +5,7 @@ import {games} from '../dist/arcade/logic.mjs';
 import {labs} from '../dist/labs.mjs';
 test('Backup validation preserves empty drafts, language completions, and lab notes',()=>{
  const source={format:'newcode-v1',progress:{'two-sum':{drafts:{javascript:'',python:'pass'},solvedLanguages:{python:true},bookmark:true}},labs:{cache:{files:{'cache.js':''},solved:true,notes:'Review TTL',mode:'strict'}}};
- const result=validateBackup(source,games,labs);assert.equal(result.progress['two-sum'].drafts.javascript,'');assert.equal(result.progress['two-sum'].solved,true);assert.equal(result.labs.cache.files['cache.js'],'');assert.equal(result.labs.cache.mode,'strict');assert.equal(result.labs.cache.notes,'Review TTL');
+ const result=validateBackup(source,games,labs);assert.equal(result.progress['two-sum'].drafts.javascript,'');assert.equal(result.progress['two-sum'].solved,true);assert.equal(result.labs.cache.files['cache.js'],'');assert.equal(result.labs.cache.mode,'solo');assert.equal(result.labs.cache.notes,'Review TTL');
 });
 test('Backup validation rejects foreign data and strips unknown files and metadata',()=>{
  assert.throws(()=>validateBackup({},games,labs),/Newcode/);

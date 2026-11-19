@@ -63,3 +63,16 @@
  .workspace-heading{flex-wrap:wrap}
  .session-controls{flex-wrap:wrap}
 }
+/* Practice controls stay inside the independently scrolling assistant panel. */
+#mode-description{margin:0;flex:none;font-size:14px;line-height:1.4;max-height:5.6em;overflow:auto}
+#hints-content{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+#progressive-hints{padding-left:24px}
+#progressive-hints li{margin-bottom:18px}
+#progressive-hints p{white-space:pre-wrap;line-height:1.55}
+#agent-controls{flex:none;font-size:14px}
+#agent-status{margin:0 0 6px;max-height:4.2em;overflow:auto;line-height:1.4}
+#agent-proposal{flex:0 1 50%;min-height:100px;overflow:auto;border:1px solid var(--line,#d7dce4);border-radius:10px;padding:10px;overscroll-behavior:contain}
+#agent-proposal h3{font-size:15px;margin:0 0 8px}
+#agent-proposal pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+.proposal-actions{display:flex;gap:8px;position:sticky;bottom:-10px;background:var(--panel,#fff);padding:10px 0}
+#agent-proposal[hidden],#agent-controls[hidden],#hints-content[hidden]{display:none}
