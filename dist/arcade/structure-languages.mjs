@@ -1,3 +1,4 @@
+import {pythonCallHelper} from './python-call.mjs';
 import {structureTypes as types,nodeDefinitions,classMethods} from './structure-types.mjs';
 import {nativeHelpers} from './structure-native.mjs';
 import {cJson,cppJson,javaJson,rustJson} from './more-languages.mjs';
@@ -135,10 +136,10 @@ function pythonProgram(gs,code){let offset=0;const cases=gs.map(g=>{const base=o
   body='a=[]\n'+g.signature.args.map(([,t],i)=>`a.append(${t==='list'?`_aa_list(raw[${i}]${g.cycle?',raw[1]':''})`:t==='lists'?`[_aa_list(x) for x in raw[${i}]]`:t==='tree'?`_aa_tree(raw[${i}])`:t==='treeref'?`_aa_find(a[0],raw[${i}])`:t==='graph'?`_aa_graph(raw[${i}])`:`raw[${i}]`})`).join('\n');
   if(g.number===133)body+='\noriginal=_aa_graph_nodes(a[0])';
   if(g.mutates===0)body+='\nbefore=_aa_list_nodes(a[0]); before_values=[n.val for n in before]';
-  body+=`\nvalue=Solution().${g.fn}(*a)`;
+  body+=`\nvalue=_aa_call_solution(${q(g.fn)}, a)`;
   if(g.mutates===0)body+='\nvalue=a[0]\nafter=_aa_list_nodes(value)\nif len(before)!=len(after) or any(not any(n is m for m in after) or n.val!=v for n,v in zip(before,before_values)): raise ValueError("Preserve nodes and values")\nif any(n is not before[i//2 if i%2==0 else len(before)-1-i//2] for i,n in enumerate(after)): raise ValueError("Incorrect node order")';
   const r=g.signature.result;body+=r==='list'?'\nvalue=[n.val for n in _aa_list_nodes(value)]':r==='tree'?'\nvalue=_aa_tree_value(value)':r==='graph'?'\nvalue=_aa_clone_value(value,original)':r==='nodevalue'?'\nif not _aa_member(a[0],value): raise ValueError("Return an existing node")\nvalue=value.val':'';
  }
  return `for _aa_i, raw in enumerate(_aa_json.loads(${q(JSON.stringify(g.tests.map(t=>t.args)))})):\n    try:\n${body.split('\n').map(l=>'        '+l).join('\n')}\n        print('__ALGO_ARCADE_RESULT_'+str(${base}+_aa_i)+'__'+_aa_json.dumps({'value':value},allow_nan=False))\n    except Exception as e:\n        print('__ALGO_ARCADE_RESULT_'+str(${base}+_aa_i)+'__'+_aa_json.dumps({'error':str(e)}))`;
- }).join('\n');return nodeDefinitions.python+'\n'+code+'\nimport json as _aa_json\n'+nativeHelpers.python+'\n'+cases+'\n';}
+ }).join('\n');return nodeDefinitions.python+'\n'+code+'\n'+pythonCallHelper+'\nimport json as _aa_json\n'+nativeHelpers.python+'\n'+cases+'\n';}
 export function structureSuite(gs,id,code){if(id==='python')return pythonProgram(gs,code);let offset=0;const cases=gs.map(g=>{const s=structureProgram(g,id,code,{casesOnly:true,offset});offset+=g.tests.length;return s;}).join('\n');return structureShell(id,code,cases);}

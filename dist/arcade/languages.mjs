@@ -1,3 +1,4 @@
+import {pythonCallHelper} from './python-call.mjs';
 import {structureStarter,structureProgram,structureContract} from './structure-languages.mjs';
 import {expansionStarter,expansionProgram} from './expansion-languages.mjs';
 import {moreStarter,moreProgram} from './more-languages.mjs';
@@ -40,7 +41,7 @@ export function starter(g,id){
   throw new Error('Unsupported language.');
 }
 
-export function languageHelp(g,id){
+function baseLanguageHelp(g,id){
   if(g.structures)return {lesson:`In ${getLanguage(id).label}: ${g.lesson}`,hint:g.hint,contract:structureContract(g,id)};
   if(g.expansion)return {lesson:`In ${getLanguage(id).label}: ${g.lesson}`,hint:g.hint,contract:(Number.isInteger(g.mutates)?'Modify the provided matrix in place; return nothing. ':g.signature.result==='uint'&&id==='java'?'Return an int containing the reversed 32-bit pattern; results display as unsigned. ':id==='c'&&['array','intmatrix','string'].includes(g.signature.result)?'Allocate the returned data with malloc/calloc. For arrays set *returnSize; for matrices also allocate *returnColumnSizes and each row. The harness frees returned allocations. ':'Return '+({array:'an integer array',intmatrix:'an integer matrix',int:'an integer',uint:'an unsigned 32-bit integer',string:'a string',bool:'a boolean'})[g.signature.result]+'. ')+`Keep the provided signature. The test harness calls your solution; do not add a main function.`};
   if(g.signature)return {lesson:`In ${getLanguage(id).label}: ${g.lesson}`,hint:g.hint,contract:(id==='c'&&g.signature.result==='string'?'Return a malloc/calloc-allocated, null-terminated string; the harness frees it. ':id==='go'?'Keep package main. ':id==='rust'?'Keep struct Solution. ':'')+`Implement the provided ${id==='java'||id==='cpp'||id==='python'||id==='rust'?'method':'function'} and return ${g.signature.result==='int'?'an integer':g.signature.result==='string'?'a string':'a boolean'}. The test harness calls your solution; do not add a main function.`};
@@ -69,6 +70,12 @@ export function languageHelp(g,id){
   return {lesson,hint,contract:contract+' The test harness calls your solution; do not add a main function.'};
 }
 
+export function languageHelp(g,id){
+ const help=baseLanguageHelp(g,id);
+ if(id==='python'&&!g.api)help.contract=`Define class Solution with method ${g.fn}(self, ...), or a top-level function ${g.fn}(...) without self. `+help.contract.replace('Implement the provided method inside class Solution.','Keep the required function name and arguments.');
+ return help;
+}
+
 export const RESULT_PREFIX='__ALGO_ARCADE_RESULT_';
 const marker=i=>`${RESULT_PREFIX}${i}__`;
 const q=JSON.stringify;
@@ -77,7 +84,7 @@ const q=JSON.stringify;
 export function buildProgram(g,id,code){
   if(g.structures)return structureProgram(g,id,code);
   const k=kind(g),tests=g.tests,fn=g.fn;
-  if(id==='python')return `${code}\n\nimport json as _aa_json\nfor _aa_i, _aa_args in enumerate(_aa_json.loads(${q(JSON.stringify(tests.map(t=>t.args)))})):\n    try:\n        _aa_returned = Solution().${fn}(*_aa_args)\n        _aa_value = ${Number.isInteger(g.mutates)?'_aa_args['+g.mutates+']':'_aa_returned'}\n        print('${RESULT_PREFIX}' + str(_aa_i) + '__' + _aa_json.dumps({'value': _aa_value}, allow_nan=False))\n    except Exception as _aa_error:\n        print('${RESULT_PREFIX}' + str(_aa_i) + '__' + _aa_json.dumps({'error': str(_aa_error)}))\n`;
+  if(id==='python')return `${code}\n${pythonCallHelper}\nimport json as _aa_json\nfor _aa_i, _aa_args in enumerate(_aa_json.loads(${q(JSON.stringify(tests.map(t=>t.args)))})):\n    try:\n        _aa_returned = _aa_call_solution(${q(fn)}, _aa_args)\n        _aa_value = ${Number.isInteger(g.mutates)?'_aa_args['+g.mutates+']':'_aa_returned'}\n        print('${RESULT_PREFIX}' + str(_aa_i) + '__' + _aa_json.dumps({'value': _aa_value}, allow_nan=False))\n    except Exception as _aa_error:\n        print('${RESULT_PREFIX}' + str(_aa_i) + '__' + _aa_json.dumps({'error': str(_aa_error)}))\n`;
   if(g.expansion)return expansionProgram(g,id,code);
   if(g.signature)return moreProgram(g,id,code);
   if(id==='java')return `${code}\n\nclass Wandbox {\n  public static void main(String[] args) {\n${tests.map((t,i)=>{

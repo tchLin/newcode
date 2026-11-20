@@ -79,6 +79,8 @@ The AI module uses the documented [WebLLM worker API](https://webllm.mlc.ai/docs
 
 ## Code execution and persistence
 
+Python algorithm exercises accept either the provided `Solution` class method or a standalone function with the same name and arguments (without `self`). Class-based data structures such as Trie and codecs retain their named APIs. Missing entry points show a specific correction instead of an undefined `Solution` error; the runner does not rewrite saved code. Interview labs keep their language-specific interfaces.
+
 JavaScript problems and JavaScript labs execute in disposable browser workers with two- and four-second limits, respectively. JavaScript lab modules use a small CommonJS-style `require('./file.js')` loader; Node APIs and npm packages are not supplied. Labs in the other six languages use the same external compiler destinations as algorithm practice. Their editable files are assembled into one native program with an eight-check harness; each language contract explains the file composition and supported imports. No reference solution is shipped to the website.
 
 The six other languages reuse Algo Arcade's remote runners: Wandbox for C/C++/Java, Rust Playground for Rust, and Compiler Explorer for Python/Go. The editor states the selected destination. **Run tests sends the source and test inputs to that provider**; requests omit credentials. Availability, compiler versions, CORS policies, quotas, and rate limits depend on those external services. Remote calls have a 45-second client timeout, with no automatic retries. Cancellation stops waiting locally and does not guarantee that a provider cancels execution.
@@ -153,9 +155,9 @@ To change the bundled editor, run `npm ci`, edit `src/editor.mjs`, and run `npm 
 
 ## Verification
 
-- **179 automated tests pass**, including the 48 reused tests, 336 acceptance checks across 42 independently implemented lab/language reference projects, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, and cancellation.
+- **184 automated tests pass**, including the 48 reused tests, 336 acceptance checks across 42 independently implemented lab/language reference projects, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, and cancellation.
 - Browser worker entry points were exercised with a Node worker transport. This verifies module paths and execution behavior, but does not substitute for browser QA.
-- **52 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
+- **53 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
 - **Live runner checks:** the rate-limit reference passed all eight checks for Python, Go, C, C++, Java, and Rust using the configured external services. Java uses Wandbox’s package-private entry-class convention. These CLI checks verify provider compatibility, not browser CORS behavior or every lab/provider combination.
 - **GitHub Pages deployment verified:** the Actions workflow passed all checks and deployed successfully on November 19, 2026. The public homepage and app module both returned HTTP 200.
 - **Not verified here:** visual rendering and browser interactions (including IndexedDB persistence/download UI), an actual WebGPU model download/generation, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
