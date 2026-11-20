@@ -81,15 +81,16 @@ export function createWorkspacePanels(root,{onSelect=()=>{}}={}){
    if(event.key==='ArrowRight')next=ids[(index+1)%ids.length];else if(event.key==='ArrowLeft')next=ids[(index+ids.length-1)%ids.length];else if(event.key==='Home')next=ids[0];else if(event.key==='End')next=ids.at(-1);
    if(next){event.preventDefault();select(next,{focusTab:true});}
   };
-  tab.ondragstart=event=>{dragged=id;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain',id);tab.classList.add('dragging');};
+  tab.ondragstart=event=>{dragged=id;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('application/x-newcode-tab',id);tab.classList.add('dragging');};
   tab.ondragend=clearDrag;
  }
  for(const [side,pane] of Object.entries(panes)){
   pane.move.onclick=()=>move(layout.active[side],side==='left'?'right':'left');
   pane.expand.onclick=()=>{saveScroll();focus=focus===side?'split':side;mobilePane=side;refresh();notifyVisible();};
-  pane.node.ondragover=event=>{if(!dragged)return;event.preventDefault();event.dataTransfer.dropEffect='move';for(const other of Object.values(panes))other.node.classList.toggle('drop-target',other===pane);for(const tab of Object.values(tabs))tab.classList.remove('drop-before');const target=event.target.closest('[data-tab]');if(target&&target!==tabs[dragged])target.classList.add('drop-before');};
+  // Capture internal tab drops before CodeMirror or other editable children handle them.
+  pane.node.addEventListener('dragover',event=>{if(!dragged)return;event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='move';for(const other of Object.values(panes))other.node.classList.toggle('drop-target',other===pane);for(const tab of Object.values(tabs))tab.classList.remove('drop-before');const target=event.target.closest('[data-tab]');if(target&&target!==tabs[dragged])target.classList.add('drop-before');},true);
   pane.node.ondragleave=event=>{if(!pane.node.contains(event.relatedTarget))pane.node.classList.remove('drop-target');};
-  pane.node.ondrop=event=>{if(!dragged)return;event.preventDefault();const id=dragged,before=event.target.closest('[data-tab]')?.dataset.tab;clearDrag();move(id,side,before||null);};
+  pane.node.addEventListener('drop',event=>{if(!dragged)return;event.preventDefault();event.stopPropagation();const id=dragged,before=event.target.closest('[data-tab]')?.dataset.tab;clearDrag();move(id,side,before||null);},true);
  }
  for(const button of mobile.querySelectorAll('button'))button.onclick=()=>{saveScroll();mobilePane=button.dataset.workspaceView;refresh();notifyVisible();};
  function updateSplit(value=layout.ratio){
