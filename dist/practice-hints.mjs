@@ -94,8 +94,23 @@ const reasoningQuestions={
 };
 
 const labHints={
+ 'rate-limit':[
+  ['Trace one window','Write down a client’s first accepted timestamp, count, and next reset boundary. Compare requests just before and exactly at the boundary.'],
+  ['Separate rejection from reset','Should rejecting a request change when the current window began? Trace a client making repeated denied requests.'],
+  ['Keep clients independent','What state belongs to each client key, and what belongs to the limiter instance? Trace repeated keys in a single batch.']
+ ],
+ dependencies:[
+  ['Model prerequisites','Draw edges for a three-job chain. Which jobs can run before any prerequisites have completed?'],
+  ['Choose deterministically','A newly ready job may sort before a job already waiting. When should you choose the next smallest ID? How do duplicate edges affect dependency counts?'],
+  ['Explain an unfinished graph','If jobs remain but no job is ready, what does that imply? Distinguish cycles from unknown or duplicate IDs, and check that input lists stay unchanged.']
+ ],
+ inventory:[
+  ['Plan before applying','Combine all quantities for each SKU before deciding whether an order fits. What happens if the last line cannot be fulfilled?'],
+  ['Remember successful orders','What information proves an order already succeeded? Should a failed attempt reserve its order ID? Trace a retry with different quantities.'],
+  ['Make releases reversible once','Store enough information to restore a reservation. After releasing it, what prevents a second release from creating stock?']
+ ],
  cache:[
-  ['Trace a request','Follow a lookup through service.js and cache.js. Compare a missing entry with an entry whose stored value is false or zero.'],
+  ['Trace a request','Follow a lookup through the service and cache modules. Compare a missing entry with an entry whose stored value is false or zero.'],
   ['Check the boundaries','Use the injected clock to reason about just before expiry and exactly at expiry. Which methods could observe expired entries without calling get first?'],
   ['Keep one contract','How will set, get, and size agree about what counts as a live entry? Check non-positive TTL and replacing a key, then explain when the service should call load.']
  ],

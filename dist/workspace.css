@@ -76,3 +76,5 @@
 #agent-proposal pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
 .proposal-actions{display:flex;gap:8px;position:sticky;bottom:-10px;background:var(--panel,#fff);padding:10px 0}
 #agent-proposal[hidden],#agent-controls[hidden],#hints-content[hidden]{display:none}
+.session-controls select{font-size:14px;padding:7px 30px 7px 9px}
+.session-controls .timer{font-variant-numeric:tabular-nums;min-width:3.5em}

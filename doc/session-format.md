@@ -11,7 +11,7 @@ Both **Download JSON** and `session.json` in the review ZIP have the same docume
 | `initialMode`, `model` | Starting assistance mode and configured model/runtime. This is not evidence that the model was actually loaded. |
 | `events` | Ordered activity records with stable event IDs. |
 | `snapshots` | Immutable code checkpoints; each contains an ID, timestamp, language, and filename-to-source map. Identical content in the same language is deduplicated. |
-| `final` | Last captured files, language, review notes, and export snapshot ID. For algorithm sessions the final files cover the selected language; earlier language checkpoints remain in `snapshots`. |
+| `final` | Last captured files, language, review notes, and export snapshot ID. For both algorithms and labs the final files cover the selected language; earlier language checkpoints remain in `snapshots`. |
 | `analysis` | Deterministic metrics, review opportunities, and interpretation limits. No AI grade. |
 
 ## Events
@@ -26,7 +26,7 @@ Every event has `id`, `type`, and `at`. Sequence order breaks timestamp ties. An
 - `agent.request`: step, parent `runId`, exact request messages, streamed/full response, generation settings, finish reason when available, snapshot, and status.
 - `agent.action`: validated action or validation failure, step, parent run ID, outcome, optional prior source and tool result. Edit outcomes distinguish `awaiting_approval`, `accepted`, `rejected`, `applied`, and `error`. Approval does not prove an edit was applied.
 - `agent.finished`: terminal loop outcome (`completed`, `step_limit`, `cancelled`, or `error`) and summary. A model-provided summary is not independent proof of success.
-- `mode.changed`, `language.changed`, `file.reset`, `timer.changed`: explicitly observed user activity.
+- `mode.changed`, `language.changed`, `file.reset`, `timer.changed`: explicitly observed user activity. Timer actions include started, paused, reset, duration.changed, and expired. Timers are optional on both tracks; countdown expiry never submits code or ends a session.
 
 Modes are `solo`, `hints`, `chat`, and `agent`. Older sessions retain their original `strict` / `assisted` names. Mode changes preserve the same session; prior assistance stays recorded. `test.run.source` is `user` or `agent` on new sessions.
 

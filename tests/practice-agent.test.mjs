@@ -85,3 +85,10 @@ test('escaping expansion cannot turn a partial read into replacement permission'
 test('an old read cannot authorize replacement when its source is no longer in context',async()=>{
  const h=harness([read,{action:'run_tests'},edit,done]);await h.run();assert.deepEqual(h.applied,[]);assert.match(h.requests[3].at(-1).content,/full source is in context/);
 });
+
+test('Language contracts share the total inference budget without clipping file feedback',()=>{
+ const feedback='x'.repeat(4000);
+ const messages=buildAgentMessages({prompt:'p'.repeat(1000),problem:{prompt:'b'.repeat(1200),contract:'c'.repeat(5000)},language:'l'.repeat(50),files:Array.from({length:16},(_,i)=>String(i).padStart(100,'f')),history:Array(5).fill('h'.repeat(900)),feedback});
+ assert.ok(messages.reduce((n,m)=>n+m.content.length,0)<=10000);
+ assert.ok(messages[1].content.includes(feedback));
+});

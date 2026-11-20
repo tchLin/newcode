@@ -12,7 +12,7 @@ npm run dev
 
 Open **http://127.0.0.1:5173**. Requires Python 3 for the local HTTP server. Do not open `index.html` as a `file://` URL: module scripts and workers require HTTP or HTTPS.
 
-No package installation is needed to run, test, or publish the committed site. Node.js 22+ and Python 3 (for independent ZIP validation) are used for checks:
+No npm package installation is needed to run, test, or publish the committed site. The full test suite uses Node.js 22+, Python 3, Go 1.23+, Rust (2021 edition), a JDK 21+, and C11/C++17 compilers. Native lab references and incomplete starters are compiled and executed; Python also independently validates ZIP exports. These tools are development prerequisites only—visitors need just a browser:
 
 ```sh
 npm test
@@ -27,7 +27,7 @@ npm run build
 2. Push the files to the repository's `main` branch. Include hidden `.github/workflows/pages.yml`.
 3. In the repository, select **Settings → Pages → Build and deployment → Source → GitHub Actions**.
 4. Run **Actions → Deploy Newcode to GitHub Pages → Run workflow**, or push another commit to `main`.
-5. The workflow runs tests and static checks, uploads only `dist/`, and deploys it. Its deployment output gives the published URL, usually `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`.
+5. The workflow selects JDK 21 and runs tests and static checks on the [Ubuntu 24.04 runner image](https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md), uploads only `dist/`, and deploys it. Its deployment output gives the published URL, usually `https://YOUR-USERNAME.github.io/YOUR-REPOSITORY/`.
 
 All application routes use URL hashes and all local assets use relative URLs, so repository subpaths and refreshed links work without server rewrite rules. No secrets need to be configured. The workflow follows [GitHub's Pages deployment guidance](https://docs.github.com/en/get-started/start-your-journey/deploying-your-website-automatically).
 
@@ -39,8 +39,9 @@ The project repository is https://github.com/tchLin/newcode. GitHub Pages is con
 - **Seven coding languages:** JavaScript, Python, C, C++, Java, Rust, and Go. Each problem/language pair retains its own draft and passed state.
 - **CodeMirror editor:** syntax highlighting, indentation, undo/redo, find/replace, and Ctrl/Cmd+Enter to run. Escape followed by Tab leaves the editor.
 - **75 original visual lessons**, preserved from Algo Arcade and accessible through “Visual games” or each problem's visual learning link. Games and the new library share progress on the same origin.
-- **Three multi-file interview labs:** a stale cache and service, a cursor-paginated feed, and an event aggregation pipeline. Each has two editable JavaScript modules, eight acceptance checks, a 45- or 60-minute timer, review prompts, and saved notes.
+- **Six multi-file interview labs in all seven languages:** cache expiration, cursor pagination, event aggregation, fixed-window rate limiting, dependency scheduling, and inventory reservations. Each language version has editable modules, eight acceptance checks, a language-specific contract, review prompts, and saved notes. Drafts and passed status stay separate by language. Native ports use idiomatic types and document differences such as error returns and missing-value sentinels.
 - **Four practice modes:** Solo, Hints-only, Chat-assisted, and Agent-assisted. AI modes use optional local Qwen 2.5 Coder 1.5B; agent edits require explicit review.
+- **Timers for every workspace:** choose 15, 20, 30, 45, 60, or 90 minutes; start, pause/resume, or reset. Problems default to 20/30/45 minutes by difficulty; labs default to their suggested duration. Expiry shows a notice and records an event without submitting or stopping work. A running countdown continues while away; pause it to stop. Imported backups restore timers paused at the exported remaining time.
 - **Progress export/import:** portable JSON backups. Imported drafts replace matching local drafts; import does not run code.
 - **Conversation and review exports:** direct JSON logs or a ZIP containing a readable report, JSON, and final code. Full session history is saved separately in IndexedDB and can be downloaded from My progress.
 
@@ -78,7 +79,7 @@ The AI module uses the documented [WebLLM worker API](https://webllm.mlc.ai/docs
 
 ## Code execution and persistence
 
-JavaScript and interview labs execute in disposable browser workers with two- and four-second limits, respectively. Lab modules use a small CommonJS-style `require('./file.js')` loader; Node APIs and npm packages are not supplied.
+JavaScript problems and JavaScript labs execute in disposable browser workers with two- and four-second limits, respectively. JavaScript lab modules use a small CommonJS-style `require('./file.js')` loader; Node APIs and npm packages are not supplied. Labs in the other six languages use the same external compiler destinations as algorithm practice. Their editable files are assembled into one native program with an eight-check harness; each language contract explains the file composition and supported imports. No reference solution is shipped to the website.
 
 The six other languages reuse Algo Arcade's remote runners: Wandbox for C/C++/Java, Rust Playground for Rust, and Compiler Explorer for Python/Go. The editor states the selected destination. **Run tests sends the source and test inputs to that provider**; requests omit credentials. Availability, compiler versions, CORS policies, quotas, and rate limits depend on those external services. Remote calls have a 45-second client timeout, with no automatic retries. Cancellation stops waiting locally and does not guarantee that a provider cancels execution.
 
@@ -121,7 +122,11 @@ The existing project was found at `../gamify_leetcode/algo-arcade`. Its source p
 ```text
 dist/index.html, styles.css     Newcode interface
 dist/app.mjs                   Library, editor, timers, chat UI, progress
-dist/labs.mjs                  Three original interview briefs and starter files
+dist/labs.mjs                  Six original interview briefs and JS starter files
+dist/lab-languages/            Six native language ports and test harnesses
+dist/lab-projects.mjs          Language selection, drafts, and legacy migration
+dist/lab-execution.mjs         Browser and remote lab execution
+dist/practice-timer.mjs        Countdown state and portable paused backups
 dist/lab-tests.mjs             Multi-file loader and lab acceptance checks
 dist/lab-runner.mjs            Disposable lab worker entry point
 dist/ai.mjs, ai-worker.mjs      Optional local WebLLM integration
@@ -148,10 +153,11 @@ To change the bundled editor, run `npm ci`, edit `src/editor.mjs`, and run `npm 
 
 ## Verification
 
-- **111 automated tests pass**, including the 48 reused tests, 24 acceptance checks across three independently implemented lab solutions, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, and cancellation.
+- **179 automated tests pass**, including the 48 reused tests, 336 acceptance checks across 42 independently implemented lab/language reference projects, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, and cancellation.
 - Browser worker entry points were exercised with a Node worker transport. This verifies module paths and execution behavior, but does not substitute for browser QA.
-- **43 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
+- **52 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
+- **Live runner checks:** the rate-limit reference passed all eight checks for Python, Go, C, C++, Java, and Rust using the configured external services. Java uses Wandbox’s package-private entry-class convention. These CLI checks verify provider compatibility, not browser CORS behavior or every lab/provider combination.
 - **GitHub Pages deployment verified:** the Actions workflow passed all checks and deployed successfully on November 19, 2026. The public homepage and app module both returned HTTP 200.
-- **Not verified here:** visual rendering and browser interactions (including IndexedDB persistence/download UI), an actual WebGPU model download/generation, fresh live submissions to external compiler providers, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
+- **Not verified here:** visual rendering and browser interactions (including IndexedDB persistence/download UI), an actual WebGPU model download/generation, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
 
 Before sharing publicly, open the site in your target desktop/mobile browsers, complete a sample problem and lab, check backup import/export, load the optional model on a compatible device, and check any remote languages you intend to support.

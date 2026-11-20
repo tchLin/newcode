@@ -19,7 +19,10 @@ export function runJavaScript(game,code,signal){
 }
 
 export async function runRemote(game,language,code,signal,fetcher=fetch){
-  const request=compileRequest(game,language,code);
+  return executeRequest(language,compileRequest(game,language,code),game.tests.length,signal,fetcher);
+}
+
+export async function executeRequest(language,request,count,signal,fetcher=fetch){
   if(signal.aborted)throw abortError();
   const response=await fetcher(getProvider(language).endpoint,{
     method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},
@@ -47,5 +50,5 @@ export async function runRemote(game,language,code,signal,fetcher=fetch){
     if(data.truncated||data.buildResult?.truncated)return {error:'The compiler truncated the output. Remove extra logging and try again.'};
     data={status:data.didExecute&&data.code===0&&data.buildResult?.code===0?'0':'1',program_output:lines(data.stdout),compiler_message:lines(data.buildResult?.stderr),program_error:lines(data.stderr)};
   }
-  return parseExecution(data,game.tests.length);
+  return parseExecution(data,count);
 }
