@@ -1,13 +1,12 @@
-/* Keep code beside one selected panel; each window owns its scrolling. */
+/* Two interchangeable tab windows with independent scrolling and a draggable split. */
 .workspace{--app-header-height:82px;height:calc(100vh - var(--app-header-height));height:calc(100dvh - var(--app-header-height));display:flex;flex-direction:column;min-height:0;max-width:none;padding:0 16px 12px;overflow:hidden}
 .workspace-heading{flex:0 0 auto;padding:10px 0;min-width:0;gap:10px}
 .workspace-heading>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.workspace .work-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch;gap:12px;overflow:hidden}
+.workspace .work-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,var(--left-pane,.51fr)) 14px minmax(0,var(--right-pane,.49fr));grid-template-rows:minmax(0,1fr);align-items:stretch;gap:0;overflow:hidden}
 .workspace .editor-column,.workspace .workspace-window{min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;height:auto;max-height:none;grid-column:auto}
 .workspace .editor-column>.panel-heading{flex:none;gap:10px;min-height:48px}
 .workspace .editor-column>.panel-heading>span{margin-right:auto}
 .workspace .editor-column>.panel-heading select{max-width:160px}
-.workspace #focus-code{font-size:14px;padding:6px 9px;white-space:nowrap}
 .workspace #editor{flex:1;min-height:0;overflow:hidden}
 .workspace #editor .cm-editor{height:100%;min-height:0}
 .workspace #editor .cm-scroller{height:100%;max-height:none!important;min-height:0;overscroll-behavior:contain}
@@ -21,7 +20,8 @@
 .workspace .window-tab{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;flex-shrink:0;font-size:14px;padding:12px 10px;color:var(--muted);white-space:nowrap}
 .workspace .window-tab[aria-selected=true]{color:var(--green);border-bottom-color:var(--green);background:#c3f17b08}
 .workspace .window-tab:focus-visible{outline-offset:-4px}
-.workspace #expand-panel{padding:7px;font-size:13px;white-space:nowrap}
+.workspace .expand-pane,.workspace .move-tab{padding:7px 5px;font-size:12px;white-space:nowrap;flex:none}
+.workspace .move-tab:disabled{opacity:.4;cursor:default}
 .workspace .test-tab-badge{font-size:12px;background:var(--raised);border-radius:5px;padding:2px 4px;color:var(--text)}
 .workspace .window-content{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden}
 .workspace .window-content>[role=tabpanel]{flex:1;min-height:0;min-width:0;width:100%;margin:0;border:0;border-radius:0;box-shadow:none;outline-offset:-3px;max-height:none;height:auto}
@@ -86,8 +86,19 @@
 .workspace #agent-proposal h3{font-size:15px;margin:0 0 8px}
 .workspace #agent-proposal pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
 .workspace .proposal-actions{display:flex;gap:8px;position:sticky;bottom:-12px;background:var(--panel);padding:10px 0}
-.workspace[data-workspace-focus=tools] .work-grid,.workspace[data-workspace-focus=code] .work-grid{grid-template-columns:minmax(0,1fr)}
-.workspace[data-workspace-focus=tools] .editor-column,.workspace[data-workspace-focus=code] .workspace-window{display:none}
+.workspace-divider{position:relative;cursor:col-resize;touch-action:none;outline-offset:-2px}
+.workspace-divider::after{content:"";position:absolute;top:0;bottom:0;left:5px;width:4px;border-radius:4px;background:var(--border);opacity:.5;transition:background .15s,opacity .15s}
+.workspace-divider:hover::after,.workspace-divider:focus-visible::after,.workspace.resizing .workspace-divider::after{background:var(--green);opacity:1}
+.workspace.resizing,.workspace.resizing *{cursor:col-resize!important;user-select:none!important}
+.workspace .window-tab[draggable=true]{cursor:grab}
+.workspace .window-tab.dragging{opacity:.4}
+.workspace .window-tab.drop-before{box-shadow:inset 3px 0 var(--green)}
+.workspace .workspace-window.drop-target{outline:2px solid var(--green);outline-offset:-2px}
+.workspace .empty-window{margin:auto;padding:24px;text-align:center;color:var(--muted)}
+.workspace .empty-window strong{color:var(--text)}
+.workspace .empty-window p{max-width:260px;font-size:14px;line-height:1.6}
+.workspace[data-workspace-focus=left] .work-grid,.workspace[data-workspace-focus=right] .work-grid{grid-template-columns:minmax(0,1fr)}
+.workspace[data-workspace-focus=left] #workspace-right,.workspace[data-workspace-focus=right] #workspace-left,.workspace:not([data-workspace-focus=split]) .workspace-divider{display:none}
 .workspace-mobile-switch{display:none}
 @media(max-width:900px){
  .workspace{padding:0 10px 10px}
@@ -97,9 +108,9 @@
  .workspace-mobile-switch{display:flex;gap:8px;flex:none;padding:0 0 8px}
  .workspace-mobile-switch button{flex:1;font-size:14px;padding:7px}
  .workspace-mobile-switch button[aria-pressed=true]{color:var(--green);border-color:var(--green)}
- .workspace #focus-code,.workspace #expand-panel{display:none}
- .workspace[data-mobile-view=code] .editor-column,.workspace[data-mobile-view=tools] .workspace-window{display:flex}
- .workspace[data-mobile-view=code] .workspace-window,.workspace[data-mobile-view=tools] .editor-column{display:none}
+ .workspace .expand-pane,.workspace .workspace-divider{display:none}
+ .workspace[data-mobile-view=left] #workspace-left,.workspace[data-mobile-view=right] #workspace-right{display:flex}
+ .workspace[data-mobile-view=left] #workspace-right,.workspace[data-mobile-view=right] #workspace-left{display:none}
  .workspace .window-toolbar{padding:0 5px}
  .workspace .window-tab{padding:11px 10px}
  .workspace .review-window,.workspace .settings-window{padding:18px}

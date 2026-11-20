@@ -91,11 +91,13 @@ Progress lives in browser localStorage (`algo-arcade-v1` and `newcode-labs-v1`);
 
 ## Workspace layout
 
-The desktop workspace has two panes: code on the left and one tabbed panel on the right. **Problem**, **Chat**, **Tests**, **Review**, and **Settings** keep the statement, conversation, results, notes/exports, and setup separate. Chat gets roughly half the available width and almost the full pane height. **Expand** gives the selected panel the full workspace; **Focus code** hides the panels until you choose **Show panels**.
+The desktop workspace has two interchangeable tabbed windows. **Code**, **Problem**, **Chat**, **Tests**, **Review**, and **Settings** can be dragged into either window, or reordered by dropping before another tab. Each window’s **Move** button sends its selected tab to the other window, including on touch devices. Empty windows remain available as drop targets. **Expand** fills the workspace with either window; **Restore** returns to the split.
+
+Drag the divider to resize the windows. When focused, the divider supports Left/Right arrows, Home/End, and Enter to balance the widths; double-click also balances them. Tab placement, selected tabs, and the split width are remembered in this browser. Each window keeps at least 280px where space allows.
 
 Test results occupy their own full-height tab. A manual run opens Tests; agent runs update its result badge without interrupting the conversation. Pending agent edit approvals open Chat for review. Mode, model, timer duration, and timer reset live in Settings; the clock and start/pause control remain above the workspace. The inactive chat composer is hidden during agent runs. Download controls are in Review.
 
-Switching tabs keeps the editor, prompt, notes, logs, and scroll containers mounted. Reading older replies suspends automatic chat scrolling until you return to the bottom or choose **Jump to latest**. Arrow keys and Home/End switch panel tabs. On narrow screens, **Code** and **Panels** switch the main view, so panels do not form a long stacked page. Each view scrolls internally within the viewport.
+Switching tabs keeps the editor, prompt, notes, logs, and scroll containers mounted. Reading older replies suspends automatic chat scrolling until you return to the bottom or choose **Jump to latest**. Arrow keys and Home/End switch panel tabs. On narrow screens, **Left** and **Right** switch windows and show their selected tab names, so panels do not form a long stacked page. Each view scrolls internally within the viewport.
 
 ## Conversation logs and review bundles
 
@@ -126,7 +128,7 @@ The existing project was found at `../gamify_leetcode/algo-arcade`. Its source p
 ```text
 dist/index.html, styles.css     Newcode interface
 dist/app.mjs                   Library, editor, timers, chat UI, progress
-dist/workspace-panels.mjs      Tabbed panels, expanded views, and scroll retention
+dist/workspace-panels.mjs      Movable tabs, resizable windows, expanded views, and scroll retention
 dist/labs.mjs                  Six original interview briefs and JS starter files
 dist/lab-languages/            Six native language ports and test harnesses
 dist/lab-projects.mjs          Language selection, drafts, and legacy migration
@@ -158,7 +160,7 @@ To change the bundled editor, run `npm ci`, edit `src/editor.mjs`, and run `npm 
 
 ## Verification
 
-- **184 automated tests pass**, including the 48 reused tests, 336 acceptance checks across 42 independently implemented lab/language reference projects, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, and cancellation.
+- **191 automated tests pass**, including the 48 reused tests, 336 acceptance checks across 42 independently implemented lab/language reference projects, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, cancellation, tab docking/order/restoration, and divider limits.
 - Browser worker entry points were exercised with a Node worker transport. This verifies module paths and execution behavior, but does not substitute for browser QA.
 - **54 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
 - **Live runner checks:** the rate-limit reference passed all eight checks for Python, Go, C, C++, Java, and Rust using the configured external services. Java uses Wandbox’s package-private entry-class convention. These CLI checks verify provider compatibility, not browser CORS behavior or every lab/provider combination.
