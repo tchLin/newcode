@@ -8,6 +8,7 @@ import {labProject,labDrafts,labFiles,labLanguages} from './lab-projects.mjs';
 import {runLab} from './lab-execution.mjs';
 import {read,write,validateBackup,progressBackup,mergeBackup,PROGRESS_KEY,LAB_KEY} from './storage.mjs';
 import * as ai from './ai.mjs';
+import {createWorkspacePanels} from './workspace-panels.mjs';
 import {timerDurations,defaultMinutes,restoreTimer,remainingSeconds,toggleCountdown,resetCountdown} from './practice-timer.mjs';
 import {modes,normalizeMode,capabilitiesFor} from './practice-modes.mjs';
 import {getHints} from './practice-hints.mjs';
@@ -19,6 +20,7 @@ const $=s=>document.querySelector(s), main=$('#main');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let progress=migrateProgress(read(PROGRESS_KEY)),labState=read(LAB_KEY),editor=null,active=null,current=null,language='javascript',file=null,ticker=null,chatBusy=false,chatEpoch=0;
 let filters={search:'',topic:'All topics',difficulty:'All levels',status:'All problems'};
+let workspacePanels=null;
 let agentController=null,agentRun=null,hintsRevealed=0;
 let noticeTimer,session=null,activeTurn=null,sessionSaveTimer=null,storageWarning=false;
 function notice(text){$('#notice').textContent=text;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>$('#notice').textContent='',5000);}
@@ -28,7 +30,7 @@ function download(name,value){const url=URL.createObjectURL(new Blob([JSON.strin
 function cleanup(){
  stopAgent('Left the workspace.');cancelTurn('Left the workspace.');
  if(session){captureFinal();finishSession(session);persistSession(session);session=null;}
- clearTimeout(sessionSaveTimer);ai.unload();active?.abort();active=null;editor?.destroy();editor=null;clearInterval(ticker);ticker=null;chatEpoch++;chatBusy=false;
+ workspacePanels?.destroy();workspacePanels=null;clearTimeout(sessionSaveTimer);ai.unload();active?.abort();active=null;editor?.destroy();editor=null;clearInterval(ticker);ticker=null;chatEpoch++;chatBusy=false;
 }
 function workFiles(){return current.isLab?labFiles(current,state(),language):{[getLanguage(language).filename]:editor?.getValue()??draftFor(progress[current.id],current,language)};}
 function captureFinal(){if(session&&current)updateFinal(session,workFiles(),language,$('#notes')?.value??session.final.notes);}
@@ -84,7 +86,7 @@ function assistantPanel(){return `<aside class="assistant panel" aria-label="Cod
    <form id="chat-form">
     <label id="prompt-label" for="chat-prompt">Ask a focused question</label>
     <textarea id="chat-prompt" maxlength="1000" placeholder="What edge case am I missing?" required></textarea>
-    <div class="composer-actions"><label class="checkbox" title="Include up to 3,000 characters of the selected file"><input id="include-code" type="checkbox" checked> Include current file</label><button class="primary" id="send" disabled>Send</button></div>
+    <div class="composer-actions"><label class="checkbox" title="Include up to 3,000 characters of the selected file"><input id="include-code" type="checkbox" checked> Include current file</label><button type="button" id="cancel-chat" hidden>Stop reply</button><button class="primary" id="send" disabled>Send</button></div>
    </form>
   </div>
   <div id="solo-content" hidden><h2>Just you and the problem.</h2><p>Solve and run tests independently. Switch modes to reveal hints or use AI; every switch is recorded.</p></div>
@@ -96,9 +98,10 @@ function workspace(g,isLab){
  current={...g,isLab};const s=isLab?state():null;if(isLab){s.files||={};s.messages||=[];language=labLanguages.includes(s.language)?s.language:'javascript';file=Object.keys(labProject(g,language).files)[0];}else file=null;
  main.className='workspace';
  main.innerHTML=`<div class="workspace-heading"><a href="${isLab?'#interviews':'#'}" class="text-link">${isLab?'Interview lab':'Problem library'}</a><span>/</span><strong>${esc(title(g))}</strong><div class="session-controls"><label class="sr-only" for="timer-duration">Timer duration</label><select id="timer-duration" title="Countdown duration">${timerDurations.map(n=>`<option value="${n}">${n} min</option>`).join('')}</select><span id="timer" class="timer" role="timer" aria-label="Time remaining"></span><button id="timer-toggle">Start timer</button><button id="timer-reset" class="quiet-button">Reset timer</button></div></div><div class="work-grid"><section class="brief panel"><div class="panel-heading"><span>▤ &nbsp; Description</span>${badge(g)}</div><div class="brief-body" role="region" aria-label="Problem statement" tabindex="0"><div class="eyebrow">${isLab?g.tag:g.category+' / #'+g.number}</div><h1>${esc(title(g))}</h1><p>${esc(g.prompt)}</p>${isLab?`<h3>Acceptance checks</h3><ol class="checks">${g.cases.map(x=>`<li>${x}</li>`).join('')}</ol><div id="contract"></div>`:`<h3>Example</h3><div class="example"><span>INPUT</span><pre>${esc(g.tests[0].args.map(x=>JSON.stringify(x)).join(', '))}</pre><span>OUTPUT</span><pre>${esc(JSON.stringify(expectedValue(g,g.tests[0])))}</pre></div><div id="contract"></div>`}<p id="hint-location" class="small">Use Hints-only mode for progressive hints.</p>${!isLab?`<a class="visual-link" href="arcade/#play/${g.id}">▦ Learn this pattern visually</a><label for="notes">Your review notes</label><textarea id="notes" placeholder="What did you change, verify, or learn?"></textarea>`:`<h3>Defend your decisions</h3><ul class="checks">${g.review.map(x=>`<li>${x}</li>`).join('')}</ul><label for="notes">Your review notes</label><textarea id="notes" placeholder="Explain your approach and trade-offs…">${esc(s.notes||'')}</textarea>`}</div></section><section class="editor-column panel"><div class="panel-heading"><span>⌘ &nbsp; Workspace</span>${`<label class="sr-only" for="language">Language</label><select id="language">${languages.map(l=>`<option value="${l.id}" ${l.id===language?'selected':''}>${l.label}${isLab&&s.solvedLanguages?.[l.id]?' · Passed':''}</option>`).join('')}</select>`}</div><div class="file-tabs" id="file-tabs"></div><div id="editor"></div><div class="editor-tools"><span id="editor-help">Tab to indent · Esc then Tab to leave · ⌘/Ctrl Enter to run</span><button id="reset" class="quiet-button">Reset file</button></div><div class="run-bar"><span id="runtime"></span><button id="cancel" hidden>Cancel</button><button id="run" class="primary">Run tests</button></div><section class="test-panel"><div class="panel-heading">Test results <span class="muted">${isLab?g.cases.length:g.tests.length} checks</span></div><div id="results" role="status" aria-live="polite"><div class="results-empty"><span>⌁</span><h3>Make a change. See what happens.</h3><p>Your test results will appear here.</p></div></div></section></section>${assistantPanel()}</div>`;
- renderEditor();$('#run').onclick=run;$('#cancel').onclick=()=>active?.abort();$('#reset').onclick=resetFile;
+ workspacePanels=createWorkspacePanels(main,{onSelect:id=>{if(id==='conversation')renderMessages();}});
+ renderEditor();$('#run').onclick=run;$('#cancel').onclick=()=>active?.abort();$('#cancel-tests').onclick=()=>active?.abort();$('#reset').onclick=resetFile;
  if(isLab)$('#notes').oninput=e=>{s.notes=e.target.value;captureFinal();save();scheduleSessionSave();};
- $('#language').onchange=e=>{if(agentController||active)return;captureFinal();snapshot(session,workFiles(),language);language=e.target.value;if(isLab){s.language=language;file=Object.keys(labProject(g,language).files)[0];save();}renderEditor();captureFinal();snapshot(session,workFiles(),language);logEvent('language.changed',{language,contract:isLab?labProject(g,language).contract:languageHelp(g,language).contract});$('#results').textContent='Run tests for the selected language.';renderHints();updateAgentDescription();};
+ $('#language').onchange=e=>{if(agentController||active)return;captureFinal();snapshot(session,workFiles(),language);language=e.target.value;if(isLab){s.language=language;file=Object.keys(labProject(g,language).files)[0];save();}renderEditor();captureFinal();snapshot(session,workFiles(),language);logEvent('language.changed',{language,contract:isLab?labProject(g,language).contract:languageHelp(g,language).contract});$('#results').textContent='Run tests for the selected language.';workspacePanels?.setTestStatus('');renderHints();updateAgentDescription();};
  session=createSession({id:g.id,title:title(g),prompt:g.prompt,track:isLab?'interview-lab':'algorithm',initialLanguage:language,languageContract:isLab?labProject(g,language).contract:languageHelp(g,language).contract,difficulty:g.difficulty||'Easy',checks:isLab?g.cases:g.tests,previouslySolved:isLab?!!s.solved:!!progress[g.id]?.solved},normalizeMode(s?.mode||progress[g.id]?.mode),ai.MODEL);
  captureFinal();snapshot(session,session.final.files,session.final.language);persistSession();
  if(!isLab)$('#notes').oninput=()=>{captureFinal();scheduleSessionSave();};
@@ -118,10 +121,10 @@ function renderEditor(){
  $('#runtime').textContent=language==='javascript'?'Runs in your browser':`Run sends code to ${getProvider(language).name}`;
 }
 function resetFile(){if(active||agentController)return;const b=$('#reset');if(b.dataset.confirm!=='yes'){b.dataset.confirm='yes';b.textContent='Confirm reset';setTimeout(()=>{if(b.isConnected){b.dataset.confirm='';b.textContent='Reset file';}},4000);return;}if(current.isLab)delete labDrafts(state(),language)[file];else{progress[current.id]??={};delete progress[current.id].drafts?.[language];}save();renderEditor();captureFinal();logEvent('file.reset',{selectedFile:file||getLanguage(language).filename,language:language});b.dataset.confirm='';b.textContent='Reset file';}
-function setRunning(value){const locked=value||!!agentController;$('#run').disabled=locked;$('#run').textContent=value?'Running…':'Run tests';$('#cancel').hidden=!value;$('#reset').disabled=locked;$('#language')?.toggleAttribute('disabled',locked);editor.setReadOnly(locked);}
+function setRunning(value){const locked=value||!!agentController;$('#run').disabled=locked;$('#run').textContent=value?'Running…':'Run tests';$('#cancel').hidden=!value;$('#cancel-tests').hidden=!value;$('#reset').disabled=locked;$('#language')?.toggleAttribute('disabled',locked);editor.setReadOnly(locked);}
 async function run(options={}){
  const fromAgent=options.source==='agent';if(active||agentController&&!fromAgent)return;
- if(options.signal?.aborted)throw new DOMException('Run cancelled.','AbortError');const g=current,controller=new AbortController();active=controller;setRunning(true);const target=$('#results');target.textContent='Checking your code…';const lang=language;
+ if(options.signal?.aborted)throw new DOMException('Run cancelled.','AbortError');const g=current,controller=new AbortController();active=controller;setRunning(true);workspacePanels?.setTestStatus('Running');if(!fromAgent)workspacePanels?.select('tests');const target=$('#results');target.textContent='Checking your code…';const lang=language;
  const abort=()=>controller.abort();options.signal?.addEventListener('abort',abort,{once:true});
  const owner=session;captureFinal();const event=recordEvent(owner,'test.run',{status:'running',source:fromAgent?'agent':'user',mode:$('#mode').value,selectedFile:file||getLanguage(lang).filename,language:lang,provider:lang==='javascript'?'browser':getProvider(lang).name,snapshotId:snapshot(owner,workFiles(),lang)});persistSession(owner);
  const timer=setTimeout(()=>controller.abort(),REMOTE_TIMEOUT);
@@ -131,10 +134,10 @@ async function run(options={}){
   if(!Array.isArray(data.results)||data.results.length!==(g.isLab?g.cases.length:g.tests.length))throw new Error('The runner returned incomplete results. Please retry.');
   const results=data.results.map((r,i)=>g.isLab?r:{name:`Test ${i+1}`,passed:!r.error&&accepts(g,g.tests[i],r.value),error:r.error||`Input: ${JSON.stringify(g.tests[i].args)}\nExpected: ${JSON.stringify(expectedValue(g,g.tests[i]))}\nReceived: ${JSON.stringify(r.value)}`});
   completeEvent(owner,event,{status:'completed',results:results.map(r=>({name:r.name,passed:r.passed,...(!r.passed?{error:r.error}: {})})),diagnostics:data.diagnostics||''});persistSession(owner);
-  const passed=results.filter(r=>r.passed).length;
+  const passed=results.filter(r=>r.passed).length;workspacePanels?.setTestStatus(`${passed}/${results.length}`);
   target.innerHTML=`<div class="result-summary ${passed===results.length?'success':''}">${passed===results.length?'✓ All checks passed':`${passed} of ${results.length} checks passed`}<p>Practice fixtures check behavior, not a proof of correctness or complexity.</p></div>${results.map(r=>`<details class="result-row ${r.passed?'passed':'failed'}"><summary>${r.passed?'✓':'×'} ${esc(r.name)}</summary><pre>${r.passed?'Passed this check.':esc(r.error)}</pre></details>`).join('')}${data.diagnostics?`<details class="result-row"><summary>Compiler notes</summary><pre>${esc(data.diagnostics)}</pre></details>`:''}`;
   if(passed===results.length){if(g.isLab){state().solved=true;state().solvedLanguages??={};state().solvedLanguages[lang]=true;$('#language').selectedOptions[0].textContent=getLanguage(lang).label+' · Passed';}else progress[g.id]=passedLanguage(progress[g.id],lang);}if(g.isLab)state().lastRun={at:new Date().toISOString(),passed,total:results.length};save();return {status:'completed',results:event.results,diagnostics:event.diagnostics};
- }catch(error){completeEvent(owner,event,{status:error.name==='AbortError'?'cancelled':'error',error:error.message});persistSession(owner);if(active===controller)target.textContent=error.message;return {status:event.status,error:event.error};}finally{options.signal?.removeEventListener('abort',abort);clearTimeout(timer);if(active===controller){active=null;setRunning(false);}}
+ }catch(error){completeEvent(owner,event,{status:error.name==='AbortError'?'cancelled':'error',error:error.message});persistSession(owner);if(active===controller){target.textContent=error.message;workspacePanels?.setTestStatus(error.name==='AbortError'?'Cancelled':'Error');}return {status:event.status,error:event.error};}finally{options.signal?.removeEventListener('abort',abort);clearTimeout(timer);if(active===controller){active=null;setRunning(false);}}
 }
 function timerState(){return current.isLab?state():(progress[current.id]??={});}
 function setupTimer(){
@@ -151,6 +154,7 @@ function messages(){return session?sessionMessages(session):[];}
 function updateLatestButton(){const root=$('#messages');if(root)$('#latest-message').hidden=root.scrollHeight-root.clientHeight-root.scrollTop<48;}
 function renderMessages({follow=false}={}){
  const root=$('#messages');if(!root)return;
+ const visible=root.getClientRects().length>0;
  const stickToBottom=follow||root.scrollHeight-root.clientHeight-root.scrollTop<48;
  const position=root.scrollTop,history=messages();
  if(!history.length){root.innerHTML='<p class="chat-empty">Ask a focused question to start. Your conversation stays here as it grows.</p>';$('#latest-message').hidden=true;return;}
@@ -163,20 +167,20 @@ function renderMessages({follow=false}={}){
   row.children[2].hidden=m.role!=='assistant'||m.status==='completed';row.children[2].textContent=m.status||'';
  });
  while(root.children.length>history.length)root.lastElementChild.remove();
- root.scrollTop=stickToBottom?root.scrollHeight:position;updateLatestButton();
+ if(visible)root.scrollTop=stickToBottom?root.scrollHeight:position;updateLatestButton();
 }
 function setModelUI(state,text){
  $('#model-box').dataset.state=state;$('#model-ready').hidden=state!=='ready';
  $('#load-ai').disabled=state==='loading';$('#load-ai').textContent=state==='loading'?'Loading…':'Load local model';
  $('#stop-ai').hidden=state!=='loading';$('#send').disabled=state!=='ready'||chatBusy;
- $('#ai-status').textContent=text;updateLatestButton();
+ $('#ai-status').textContent=text;const selectedMode=normalizeMode($('#mode').value),caps=capabilitiesFor(selectedMode);$('#chat-model-summary').textContent=modes.find(m=>m.id===selectedMode).label+(caps.aiChat||caps.agent?(state==='ready'?' · Model ready':state==='loading'?' · Loading':' · Model not loaded'):'');$('#open-ai-setup').hidden=state==='ready';$('#open-ai-setup').textContent=state==='loading'?'Model loading · View settings':'Set up local AI';$('#cancel-chat').hidden=!chatBusy||!!agentController;updateLatestButton();
 }
 function setupChat(mode){
  $('#mode').value=mode;
  const unloadModel=reason=>{stopAgent(reason);cancelTurn(reason);ai.unload();chatEpoch++;chatBusy=false;setModelUI('idle','Model unloaded. Cached files can be reused when you load it again.');renderMessages();};
  const setMode=()=>{const mode=normalizeMode($('#mode').value),caps=capabilitiesFor(mode);
   $('#mode-description').textContent=modes.find(m=>m.id===mode).description;
-  $('#ai-content').hidden=!caps.aiChat&&!caps.agent;$('#solo-content').hidden=mode!=='solo';$('#hints-content').hidden=mode!=='hints';
+  $('#model-box').hidden=!caps.aiChat&&!caps.agent;$('.model-settings-heading').hidden=!caps.aiChat&&!caps.agent;$('#ai-content').hidden=!caps.aiChat&&!caps.agent;$('#solo-content').hidden=mode!=='solo';$('#hints-content').hidden=mode!=='hints';
   $('#agent-controls').hidden=!caps.agent;updateAgentDescription();$('#include-code').closest('label').hidden=caps.agent;
   $('#prompt-label').textContent=caps.agent?'Give the agent a focused task':'Ask a focused question';$('#send').textContent=caps.agent?'Start agent':'Send';
   $('#chat-prompt').placeholder=caps.agent?'Read the files, fix one failing check, then run tests.':'What edge case am I missing?';
@@ -189,11 +193,11 @@ function setupChat(mode){
  $('#messages').onscroll=updateLatestButton;
  $('#latest-message').onclick=()=>{const root=$('#messages');root.scrollTop=root.scrollHeight;updateLatestButton();root.focus({preventScroll:true});};
  $('#load-ai').onclick=async()=>{const caps=capabilitiesFor($('#mode').value);if(ai.ready()||(!caps.aiChat&&!caps.agent))return;const status=$('#ai-status'),epoch=chatEpoch;setModelUI('loading','Checking GPU and loading model…');
-  try{await ai.connect(text=>{if(epoch===chatEpoch&&status.isConnected)status.textContent=text;});if(epoch!==chatEpoch)return;setModelUI('ready','Ready. Inference runs locally on your device.');renderMessages();$('#chat-prompt').focus({preventScroll:true});}
+  try{await ai.connect(text=>{if(epoch===chatEpoch&&status.isConnected)status.textContent=text;});if(epoch!==chatEpoch)return;setModelUI('ready','Ready. Inference runs locally on your device.');renderMessages();if(workspacePanels?.isVisible('settings')){workspacePanels.select('conversation');$('#chat-prompt').focus({preventScroll:true});}}
   catch(error){if(epoch===chatEpoch&&status.isConnected)setModelUI('idle',error.message);}
  };
  $('#stop-ai').onclick=()=>unloadModel('Model loading cancelled by the user.');
- $('#unload-ai').onclick=()=>unloadModel('Model unloaded by the user.');
+ $('#unload-ai').onclick=()=>unloadModel('Model unloaded by the user.');$('#cancel-chat').onclick=()=>unloadModel('Response cancelled by the user.');
  $('#chat-form').onsubmit=async e=>{
   e.preventDefault();const caps=capabilitiesFor($('#mode').value);if(chatBusy||!ai.ready()||(!caps.aiChat&&!caps.agent))return;
   const prompt=$('#chat-prompt').value.trim();if(!prompt)return;if(caps.agent){if(!active)await startAgent(prompt);return;}
@@ -203,7 +207,7 @@ function setupChat(mode){
   const context=`Problem: ${title(current)}\n${current.prompt}\n${current.isLab?labProject(current,language).contract:''}\n${includeCode?`Current file (${selectedFile}):\n${editor.getValue().slice(0,3000)}`:''}`;
   const request=ai.buildMessages(prompt,context,previous);captureFinal();
   const event=recordEvent(owner,'ai.turn',{prompt,request,includeCode,selectedFile,language:lang,mode:$('#mode').value,model:ai.MODEL,generation:{temperature:0.3,max_tokens:600},snapshotId:snapshot(owner,workFiles(),lang),status:'streaming',response:''});
-  activeTurn={owner,event};persistSession(owner);chatBusy=true;$('#send').disabled=true;$('#chat-prompt').value='';renderMessages({follow:true});
+  activeTurn={owner,event};persistSession(owner);chatBusy=true;$('#cancel-chat').hidden=false;$('#send').disabled=true;$('#chat-prompt').value='';renderMessages({follow:true});
   let lastSaved=0,finishReason=null;
   try{
    const reply=await ai.ask(prompt,context,previous,text=>{if(event.status!=='streaming')return;event.response=text;if(Date.now()-lastSaved>1000){lastSaved=Date.now();persistSession(owner);}if(epoch===chatEpoch)renderMessages();},request,metadata=>{finishReason=metadata.finishReason;});
@@ -233,7 +237,7 @@ function stopAgent(reason){
 }
 function approveAgentEdit({file:filename,before,after,reason,signal}){
  return new Promise(resolve=>{
-  const panel=$('#agent-proposal');
+  workspacePanels?.select('conversation');const panel=$('#agent-proposal');
   const done=value=>{signal.removeEventListener('abort',abort);panel.hidden=true;panel.replaceChildren();resolve(value);};
   const abort=()=>done(false);if(signal.aborted){resolve(false);return;}
   panel.innerHTML=`<h3>Review edit: ${esc(filename)}</h3><p>${esc(reason)}</p><details><summary>Current code</summary><pre>${esc(before)}</pre></details><details open><summary>Proposed replacement</summary><pre>${esc(after)}</pre></details><div class="proposal-actions"><button id="accept-edit" class="primary">Accept edit</button><button id="reject-edit">Reject edit</button></div>`;

@@ -1,80 +1,119 @@
-/* A bounded workspace: the statement, code, tests and chat scroll independently. */
-.workspace{height:calc(100vh - 82px);height:calc(100dvh - 82px);display:flex;flex-direction:column;min-height:0;padding-bottom:14px;overflow:hidden}
-.workspace-heading{flex:0 0 auto;padding:14px 0;min-width:0}
-.workspace .work-grid{flex:1;min-height:0;grid-template-columns:minmax(0,.95fr) minmax(0,1.5fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch;overflow:hidden}
-.work-grid>.panel{min-height:0;display:flex;flex-direction:column}
-.work-grid>.panel>.panel-heading{flex:0 0 auto}
-.work-grid>.brief .brief-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:22px}
-.work-grid>.brief .brief-body>p{max-height:none;overflow:visible}
-.work-grid>.editor-column #editor{flex:1;min-height:0;overflow:hidden}
-.work-grid>.editor-column #editor .cm-editor{height:100%;min-height:0}
-.work-grid>.editor-column #editor .cm-scroller{height:100%;max-height:none!important;min-height:0;overscroll-behavior:contain}
-.work-grid>.editor-column #editor .cm-content,.work-grid>.editor-column #editor .cm-gutters{min-height:100%}
-.work-grid>.editor-column .file-tabs,.work-grid>.editor-column .editor-tools,.work-grid>.editor-column .run-bar{flex:0 0 auto}
-.work-grid>.editor-column .test-panel{flex:0 0 26%;min-height:110px;max-height:270px;display:flex;flex-direction:column;overflow:hidden}
-.work-grid>.editor-column .test-panel>.panel-heading{flex:0 0 auto;min-height:40px;padding:9px 14px}
-.work-grid>.editor-column #results{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;padding:12px}
-.work-grid>.editor-column .results-empty{padding:3px}
-.work-grid>.editor-column .results-empty>span{display:none}
-.work-grid>.assistant{grid-column:auto;overflow:hidden}
-.work-grid>.assistant .assistant-body{display:flex;flex-direction:column;flex:1;min-height:0;gap:10px;padding:12px;overflow:hidden}
-.work-grid>.assistant .practice-mode{display:flex;align-items:center;gap:12px;flex:0 0 auto}
-.work-grid>.assistant .practice-mode label{font-size:.875rem}
-.work-grid>.assistant .practice-mode select{min-width:0;flex:1;width:auto;padding-top:8px;padding-bottom:8px;font-size:.875rem}
-.work-grid>.assistant #ai-content{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow:hidden}
-.work-grid>.assistant .model-box{flex:0 0 auto;max-height:35%;min-height:45px;overflow:auto;overscroll-behavior:contain;padding:10px;margin:0;max-width:none}
-.work-grid>.assistant .model-setup>p{font-size:.75rem;line-height:1.5;margin:6px 0 9px}
-.work-grid>.assistant .model-actions{display:flex;flex-wrap:wrap;gap:7px}
-.work-grid>.assistant .model-actions button{width:auto;font-size:.875rem;padding:8px 10px;margin:0}
-.work-grid>.assistant .model-ready{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.work-grid>.assistant .model-ready strong{display:block;color:var(--green);font-size:.875rem}
-.work-grid>.assistant .model-ready small{display:block;color:var(--muted);font-size:.75rem;margin-top:3px}
-.work-grid>.assistant .model-ready button{width:auto;border:0;background:transparent;padding:6px;font-size:.875rem}
-.work-grid>.assistant .model-box[data-state=ready]{background:#18251e;border-color:#354b3b;overflow:visible}
-.work-grid>.assistant .model-box[data-state=ready] .model-setup{display:none}
-.work-grid>.assistant .conversation-frame{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;border:1px solid var(--border);border-radius:7px;background:#0d131c}
-.work-grid>.assistant .messages{flex:1;min-height:0;max-height:none;margin:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:10px;overflow-anchor:none}
-.work-grid>.assistant .messages:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
-.work-grid>.assistant .messages .message{padding:10px;overflow-wrap:anywhere}
-.work-grid>.assistant .messages .message:last-child{margin-bottom:0}
-.work-grid>.assistant .messages .message pre{font-size:.875rem;line-height:1.65}
-.work-grid>.assistant .chat-empty{font-size:.875rem;line-height:1.6;color:var(--muted);margin:8px}
-.work-grid>.assistant #latest-message{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.75rem;padding:7px 11px;box-shadow:0 2px 12px #0008}
-.work-grid>.assistant #chat-form{flex:0 0 auto;margin:0;border-top:1px solid var(--border);padding-top:10px}
-.work-grid>.assistant #chat-form>label{font-size:.875rem;margin-bottom:6px}
-.work-grid>.assistant #chat-form textarea{height:74px;min-height:74px;max-height:110px;resize:none;font-size:.875rem;display:block;padding:8px 10px}
-.work-grid>.assistant .composer-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
-.work-grid>.assistant #chat-form .checkbox{font-size:.75rem;margin:0;gap:6px}
-.work-grid>.assistant #send{width:auto;margin:0;padding:8px 13px;font-size:.875rem;flex-shrink:0}
-.work-grid>.assistant #solo-content{flex:1;min-height:0;overflow:auto;padding-top:12px}
-.work-grid>.assistant .session-download{flex:0 0 auto;margin:0;padding:0;border-top:1px solid var(--border);max-height:26%;overflow:auto;overscroll-behavior:contain}
-.work-grid>.assistant .session-download>summary{font-size:.875rem;padding:10px 0 2px;color:var(--muted)}
-.work-grid>.assistant .session-download-content{padding-top:10px}
-.work-grid>.assistant .export-actions{display:flex;flex-wrap:wrap;gap:8px}
-.work-grid>.assistant .export-actions button{width:auto;margin:0;padding:8px 10px;font-size:.875rem}
-.work-grid>.assistant .session-download .small{font-size:.75rem;line-height:1.6;margin:9px 0 2px}
-.work-grid>.assistant .session-download a{color:var(--green);text-decoration:underline}
-@media(max-width:1000px),(max-height:620px){
- .workspace{height:auto;overflow:visible;padding-bottom:20px}
- .workspace .work-grid{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:none;overflow:visible;gap:16px}
- .work-grid>.brief{height:65vh;height:65dvh;min-height:300px;max-height:650px}
- .work-grid>.editor-column{height:80vh;height:80dvh;min-height:480px}
- .work-grid>.assistant{height:85vh;height:85dvh;min-height:540px;max-height:900px}
- .workspace-heading{flex-wrap:wrap}
- .session-controls{flex-wrap:wrap}
+/* Keep code beside one selected panel; each window owns its scrolling. */
+.workspace{--app-header-height:82px;height:calc(100vh - var(--app-header-height));height:calc(100dvh - var(--app-header-height));display:flex;flex-direction:column;min-height:0;max-width:none;padding:0 16px 12px;overflow:hidden}
+.workspace-heading{flex:0 0 auto;padding:10px 0;min-width:0;gap:10px}
+.workspace-heading>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.workspace .work-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-rows:minmax(0,1fr);align-items:stretch;gap:12px;overflow:hidden}
+.workspace .editor-column,.workspace .workspace-window{min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden;height:auto;max-height:none;grid-column:auto}
+.workspace .editor-column>.panel-heading{flex:none;gap:10px;min-height:48px}
+.workspace .editor-column>.panel-heading>span{margin-right:auto}
+.workspace .editor-column>.panel-heading select{max-width:160px}
+.workspace #focus-code{font-size:14px;padding:6px 9px;white-space:nowrap}
+.workspace #editor{flex:1;min-height:0;overflow:hidden}
+.workspace #editor .cm-editor{height:100%;min-height:0}
+.workspace #editor .cm-scroller{height:100%;max-height:none!important;min-height:0;overscroll-behavior:contain}
+.workspace #editor .cm-content,.workspace #editor .cm-gutters{min-height:100%}
+.workspace .file-tabs,.workspace .editor-tools,.workspace .run-bar{flex:none}
+.workspace .file-tabs{overflow-x:auto;white-space:nowrap}
+.workspace .run-bar{gap:8px;flex-wrap:wrap}
+.workspace .run-bar>span{flex:1;min-width:120px}
+.workspace .window-toolbar{display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--border);padding:0 8px;flex:none;min-height:49px}
+.workspace .window-tabs{display:flex;flex:1;min-width:0;overflow-x:auto;scrollbar-width:thin;gap:2px;align-self:stretch}
+.workspace .window-tab{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;flex-shrink:0;font-size:14px;padding:12px 10px;color:var(--muted);white-space:nowrap}
+.workspace .window-tab[aria-selected=true]{color:var(--green);border-bottom-color:var(--green);background:#c3f17b08}
+.workspace .window-tab:focus-visible{outline-offset:-4px}
+.workspace #expand-panel{padding:7px;font-size:13px;white-space:nowrap}
+.workspace .test-tab-badge{font-size:12px;background:var(--raised);border-radius:5px;padding:2px 4px;color:var(--text)}
+.workspace .window-content{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden}
+.workspace .window-content>[role=tabpanel]{flex:1;min-height:0;min-width:0;width:100%;margin:0;border:0;border-radius:0;box-shadow:none;outline-offset:-3px;max-height:none;height:auto}
+.workspace .brief,.workspace .assistant,.workspace .test-panel{display:flex;flex-direction:column;overflow:hidden}
+.workspace .brief>.panel-heading,.workspace .assistant>.panel-heading,.workspace .test-panel>.panel-heading{flex:none;min-height:40px;padding:10px 16px;font-size:14px}
+.workspace .brief .brief-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:22px}
+.workspace .brief .brief-body>p{max-height:none;overflow:visible}
+.workspace .test-panel #results{flex:1;min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain;padding:18px}
+.workspace .test-panel .results-empty{padding:32px 12px}
+.workspace .assistant .assistant-body{display:flex;flex-direction:column;flex:1;min-height:0;gap:10px;padding:12px;overflow:hidden}
+.workspace #ai-content{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow:hidden}
+.workspace .conversation-frame{position:relative;flex:1;min-height:0;overflow:hidden;display:flex;border:1px solid var(--border);border-radius:8px;background:#0d131c}
+.workspace .messages{flex:1;min-height:0;max-height:none;margin:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:16px;overflow-anchor:none}
+.workspace .messages:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+.workspace .messages .message{padding:14px;overflow-wrap:anywhere}
+.workspace .messages .message:last-child{margin-bottom:0}
+.workspace .messages .message pre{font-size:15px;line-height:1.7}
+.workspace .chat-empty{font-size:15px;line-height:1.6;color:var(--muted);margin:8px}
+.workspace #latest-message{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:13px;padding:7px 11px;box-shadow:0 2px 12px #0008}
+.workspace #chat-form{flex:none;margin:0;border-top:1px solid var(--border);padding-top:10px}
+.workspace #chat-form>label{font-size:14px;margin-bottom:6px}
+.workspace #chat-form textarea{height:76px;min-height:76px;max-height:110px;resize:none;font-size:14px;display:block;padding:8px 10px}
+.workspace .composer-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:8px}
+.workspace #chat-form .checkbox{font-size:14px;margin:0 auto 0 0;gap:6px}
+.workspace #send,.workspace #cancel-chat{width:auto;margin:0;padding:8px 13px;font-size:14px;flex-shrink:0}
+.workspace .chat-setup-link{align-self:flex-start;flex:none;font-size:14px;padding:7px 11px}
+.workspace #solo-content,.workspace #hints-content{flex:1;min-height:0;overflow:auto;padding:16px;overscroll-behavior:contain}
+.workspace #progressive-hints{padding-left:24px}
+.workspace #progressive-hints li{margin-bottom:18px}
+.workspace #progressive-hints p{white-space:pre-wrap;line-height:1.55}
+.workspace .review-window,.workspace .settings-window{padding:24px;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.workspace .review-window h2,.workspace .settings-window h2{font-size:22px;margin-bottom:14px}
+.workspace .settings-window h3{margin:24px 0 12px}
+.workspace .review-window>label{display:block;margin-top:22px}
+.workspace .review-window #notes{min-height:180px;font-size:15px;resize:vertical}
+.workspace .practice-mode{display:flex;align-items:center;gap:12px}
+.workspace .practice-mode select{flex:1;min-width:0;max-width:320px;font-size:14px}
+.workspace #mode-description{font-size:14px;line-height:1.6;margin:12px 0 20px;max-height:none;overflow:visible}
+.workspace .model-box{max-width:none;max-height:none;padding:16px;margin:0}
+.workspace .model-setup>p{font-size:14px;line-height:1.6;margin:9px 0 12px}
+.workspace .model-actions{display:flex;flex-wrap:wrap;gap:8px}
+.workspace .model-actions button{width:auto;font-size:14px;margin:0}
+.workspace .model-ready{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.workspace .model-ready strong{display:block;color:var(--green);font-size:14px}
+.workspace .model-ready small{display:block;color:var(--muted);font-size:13px;margin-top:5px}
+.workspace .model-box[data-state=ready]{background:#18251e;border-color:#354b3b}
+.workspace .model-box[data-state=ready] .model-setup{display:none}
+.workspace .timer-settings{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.workspace .timer-settings label{flex-basis:100%}
+.workspace .session-controls{display:flex;align-items:center;gap:8px;flex:none;margin-left:auto}
+.workspace .session-controls .timer{font-variant-numeric:tabular-nums;min-width:3.5em}
+.workspace .session-controls button{padding:7px 10px}
+.workspace .session-download{margin:24px 0 0;padding:16px 0;border-top:1px solid var(--border);max-height:none;overflow:visible}
+.workspace .session-download>summary{font-size:15px;color:var(--text)}
+.workspace .session-download-content{padding-top:14px}
+.workspace .export-actions{display:flex;flex-wrap:wrap;gap:8px}
+.workspace .session-download .small{font-size:14px;line-height:1.6;margin:12px 0 2px}
+.workspace .session-download a{color:var(--green);text-decoration:underline}
+.workspace #agent-controls{flex:none;font-size:14px}
+.workspace #agent-status{margin:0 0 6px;max-height:4.2em;overflow:auto;line-height:1.4}
+.workspace #agent-proposal{flex:0 1 55%;min-height:130px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:12px;overscroll-behavior:contain}
+.workspace #agent-proposal h3{font-size:15px;margin:0 0 8px}
+.workspace #agent-proposal pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.workspace .proposal-actions{display:flex;gap:8px;position:sticky;bottom:-12px;background:var(--panel);padding:10px 0}
+.workspace[data-workspace-focus=tools] .work-grid,.workspace[data-workspace-focus=code] .work-grid{grid-template-columns:minmax(0,1fr)}
+.workspace[data-workspace-focus=tools] .editor-column,.workspace[data-workspace-focus=code] .workspace-window{display:none}
+.workspace-mobile-switch{display:none}
+@media(max-width:900px){
+ .workspace{padding:0 10px 10px}
+ .workspace .work-grid{grid-template-columns:minmax(0,1fr)}
+ .workspace-heading{flex-wrap:wrap;gap:6px;font-size:14px}
+ .workspace-heading>strong{flex:1;min-width:100px}
+ .workspace-mobile-switch{display:flex;gap:8px;flex:none;padding:0 0 8px}
+ .workspace-mobile-switch button{flex:1;font-size:14px;padding:7px}
+ .workspace-mobile-switch button[aria-pressed=true]{color:var(--green);border-color:var(--green)}
+ .workspace #focus-code,.workspace #expand-panel{display:none}
+ .workspace[data-mobile-view=code] .editor-column,.workspace[data-mobile-view=tools] .workspace-window{display:flex}
+ .workspace[data-mobile-view=code] .workspace-window,.workspace[data-mobile-view=tools] .editor-column{display:none}
+ .workspace .window-toolbar{padding:0 5px}
+ .workspace .window-tab{padding:11px 10px}
+ .workspace .review-window,.workspace .settings-window{padding:18px}
+ .workspace .messages{padding:10px}
+ .workspace .editor-tools>span{font-size:12px}
+ .workspace .run-bar>span{font-size:13px}
 }
-/* Practice controls stay inside the independently scrolling assistant panel. */
-#mode-description{margin:0;flex:none;font-size:14px;line-height:1.4;max-height:5.6em;overflow:auto}
-#hints-content{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
-#progressive-hints{padding-left:24px}
-#progressive-hints li{margin-bottom:18px}
-#progressive-hints p{white-space:pre-wrap;line-height:1.55}
-#agent-controls{flex:none;font-size:14px}
-#agent-status{margin:0 0 6px;max-height:4.2em;overflow:auto;line-height:1.4}
-#agent-proposal{flex:0 1 50%;min-height:100px;overflow:auto;border:1px solid var(--line,#d7dce4);border-radius:10px;padding:10px;overscroll-behavior:contain}
-#agent-proposal h3{font-size:15px;margin:0 0 8px}
-#agent-proposal pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
-.proposal-actions{display:flex;gap:8px;position:sticky;bottom:-10px;background:var(--panel,#fff);padding:10px 0}
-#agent-proposal[hidden],#agent-controls[hidden],#hints-content[hidden]{display:none}
-.session-controls select{font-size:14px;padding:7px 30px 7px 9px}
-.session-controls .timer{font-variant-numeric:tabular-nums;min-width:3.5em}
+@media(max-width:760px){.workspace{--app-header-height:108px}.workspace .session-controls{margin-left:0}}
+@media(max-height:550px){
+ .workspace #chat-form>label{display:none}
+ .workspace #chat-form textarea{height:48px;min-height:48px}
+ .workspace .assistant>.panel-heading{min-height:32px;padding:6px 12px}
+ .workspace #agent-status{max-height:2.8em}
+}
+
+.workspace .model-ready button{width:auto;margin:0;flex-shrink:0}
+.workspace .assistant>.panel-heading{gap:8px}

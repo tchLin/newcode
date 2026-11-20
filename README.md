@@ -56,7 +56,7 @@ The interview labs apply the practice strategy in [`doc/lightweight-model-coding
 | Chat-assisted | Read-only conversation, including explanations and code suggestions. You edit files and run tests. |
 | Agent-assisted | A maximum of six model steps per request: read an exercise file, propose a replacement for review, run the exercise tests, or finish. Accept or reject each edit; Stop agent cancels pending work. |
 
-Select a mode in the coding partner panel. Modes are remembered per exercise and included in progress backups. Old `strict` and `assisted` values migrate to `solo` and `chat`. Switching modes cancels ongoing AI work; revealed hints and earlier assistance remain in the session log. To use curated hints from another mode, switch to Hints-only.
+Select a mode in the Settings tab. Modes are remembered per exercise and included in progress backups. Old `strict` and `assisted` values migrate to `solo` and `chat`. Switching modes cancels ongoing AI work; revealed hints and earlier assistance remain in the session log. To use curated hints from another mode, switch to Hints-only.
 
 These are self-evaluation workflows, not proctoring. Client-side controls cannot verify use of outside tools or stop visitors from modifying their own browser. App dispatch rules, filename allowlists, schema checks, and review decisions control agent actions independently of model instructions. Hints-only uses authored text because a prompt cannot guarantee that a model will withhold solutions.
 
@@ -91,13 +91,15 @@ Progress lives in browser localStorage (`algo-arcade-v1` and `newcode-labs-v1`);
 
 ## Workspace layout
 
-On desktop, the statement, code, tests, and AI conversation scroll independently inside the viewport. The chat composer remains below the conversation, and scrolling up to read older replies suspends automatic scrolling until you return to the bottom or choose **Jump to latest**. After loading, the model setup collapses to a compact **Model ready** row with an **Unload** control. Export options are in the **Download conversation** disclosure at the bottom of the assistant panel.
+The desktop workspace has two panes: code on the left and one tabbed panel on the right. **Problem**, **Chat**, **Tests**, **Review**, and **Settings** keep the statement, conversation, results, notes/exports, and setup separate. Chat gets roughly half the available width and almost the full pane height. **Expand** gives the selected panel the full workspace; **Focus code** hides the panels until you choose **Show panels**.
 
-On narrow or very short screens, the panels stack, each with its own bounded scroll area. The page scrolls between panels while long statements and conversations scroll inside their panels.
+Test results occupy their own full-height tab. A manual run opens Tests; agent runs update its result badge without interrupting the conversation. Pending agent edit approvals open Chat for review. Mode, model, timer duration, and timer reset live in Settings; the clock and start/pause control remain above the workspace. The inactive chat composer is hidden during agent runs. Download controls are in Review.
+
+Switching tabs keeps the editor, prompt, notes, logs, and scroll containers mounted. Reading older replies suspends automatic chat scrolling until you return to the bottom or choose **Jump to latest**. Arrow keys and Home/End switch panel tabs. On narrow screens, **Code** and **Panels** switch the main view, so panels do not form a long stacked page. Each view scrolls internally within the viewport.
 
 ## Conversation logs and review bundles
 
-At the bottom of the coding partner panel, expand **Download conversation** and choose **Download JSON**. Use **Review bundle** for a single ZIP with `report.md`, `session.json`, `README.txt`, and final code files. Both exports include the same JSON data. CSV is not included: nested conversation/context/test data is represented directly in JSON.
+In the **Review** tab, expand **Download conversation** and choose **Download JSON**. Use **Review bundle** for a single ZIP with `report.md`, `session.json`, `README.txt`, and final code files. Both exports include the same JSON data. CSV is not included: nested conversation/context/test data is represented directly in JSON.
 
 Each log uses `format: "newcode-session"` and `schemaVersion: 1`, with a unique session ID and UTC timestamps. It records:
 
@@ -124,6 +126,7 @@ The existing project was found at `../gamify_leetcode/algo-arcade`. Its source p
 ```text
 dist/index.html, styles.css     Newcode interface
 dist/app.mjs                   Library, editor, timers, chat UI, progress
+dist/workspace-panels.mjs      Tabbed panels, expanded views, and scroll retention
 dist/labs.mjs                  Six original interview briefs and JS starter files
 dist/lab-languages/            Six native language ports and test harnesses
 dist/lab-projects.mjs          Language selection, drafts, and legacy migration
@@ -157,7 +160,7 @@ To change the bundled editor, run `npm ci`, edit `src/editor.mjs`, and run `npm 
 
 - **184 automated tests pass**, including the 48 reused tests, 336 acceptance checks across 42 independently implemented lab/language reference projects, deliberately incomplete starters, storage validation, AI context limits/cancellation, worker timeout/cancellation/recovery, full transcript retention, event status handling, export integrity, independent Python ZIP verification, all-mode progress migration, agent action validation, explicit approval, stale/partial-read refusal, step limits, and cancellation.
 - Browser worker entry points were exercised with a Node worker transport. This verifies module paths and execution behavior, but does not substitute for browser QA.
-- **53 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
+- **54 static modules** pass syntax/import checks. The local index and pinned WebLLM CDN module returned HTTP 200; the CDN module contains the selected model and required worker exports.
 - **Live runner checks:** the rate-limit reference passed all eight checks for Python, Go, C, C++, Java, and Rust using the configured external services. Java uses Wandbox’s package-private entry-class convention. These CLI checks verify provider compatibility, not browser CORS behavior or every lab/provider combination.
 - **GitHub Pages deployment verified:** the Actions workflow passed all checks and deployed successfully on November 19, 2026. The public homepage and app module both returned HTTP 200.
 - **Not verified here:** visual rendering and browser interactions (including IndexedDB persistence/download UI), an actual WebGPU model download/generation, or browser interaction with the deployed site. The browser automation host was unavailable and native Chrome access was not approved.
